@@ -4,25 +4,30 @@
 {% block main %}
 <div>
     <h1>Minuteman</h1>
-    <form method="POST" action="/">
-        {{ form.csrf_token }}
-        <p>
-        {{ form.transcript.label }}
-        </p>
-        <p>
-        {{ form.transcript()}}
-        </p>
-        {% if form.transcript.errors %}
-            <ul class="errors">
-                {% for error in form.transcript.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-        <p>
-            <input type="submit" value="Get me some minutes!">
-        </p>
-    </form>
+    <div class="transcript-input">
+        <form method="POST" action="/">
+            {{ form.csrf_token }}
+            <p>
+            {{ form.transcript.label }}
+            </p>
+            <p>
+            {{ form.transcript()}}
+            </p>
+            {% if form.transcript.errors %}
+                <ul class="errors">
+                    {% for error in form.transcript.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <p>
+                <input type="submit" value="Get me some minutes!">
+            </p>  
+        </form>
+    </div>
+    <div class="minutes">
+        {{ minutes }}
+    </div>
 </div>
 
 {% endblock %}

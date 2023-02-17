@@ -1,0 +1,16 @@
+version: '0.1'
+services:
+  tf-serving:
+    image: "tensorflow/serving"
+    environment:
+    platform: linux
+  backend:
+    build: ./web_backend/
+    ports:
+      - 5000:5000
+    environment:
+    depends_on:
+      - tf-serving
+    tty: true
+    stdin_open: true
+    platform: linux

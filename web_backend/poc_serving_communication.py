@@ -11,7 +11,7 @@ model_input = tokenizer(text)
 model_input = dict(model_input)
 
 rest_url = 'http://localhost:8501/v1/models/final_finetuned:predict'
-json_data = {'signature_name': 'serving_default', 'instances': [dict_text]}
+json_data = {'signature_name': 'serving_default', 'instances': [model_input]}
 
 json_response = requests.post(rest_url, json=json_data)
 pred = json.loads(json_response.text)

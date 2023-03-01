@@ -15,6 +15,10 @@
     * data collection for debugging models
 
 ## stack
+    * hedgedoc - rozšíření
+        * je to opensource
+    * jitsi meet? to je taky opensource
+        * udělat z toho dohromady nějakou spletenost, zahodit obraz?
     * Flask
     * SqlAlchemy
     * WTForms
@@ -23,6 +27,7 @@
     * Tensorflow Serving
     * Tensor2Tensor for requests to backend
         * https://github.com/ufal/lindat-translation/blob/master/app/models/t2t_model.py, line with "_do_send_request"
+        * https://huggingface.co/blog/tf-serving
 
 ## current TODO
     * implement a simple flask backend

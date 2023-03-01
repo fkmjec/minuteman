@@ -29,5 +29,5 @@ if __name__ == "__main__":
     model = ModifiedModel.from_pretrained(args.from_path)
     # save it with saved_model=True in order to have a SavedModel version along with the h5 weights.
     print("saving model with a different signature...")
-    model.save_pretrained(args.save_to, saved_model=True)
+    model.save(args.save_to, save_format="tf")
 

@@ -12,12 +12,11 @@ class ModifiedModel(TFAutoModelForSeq2SeqLM):
     # Decorate the serving method with the new input_signature
     # an input_signature represents the name, the data type and the shape of an expected input
     @tf.function(input_signature=[{
-        "inputs_ids": tf.TensorSpec((None, None, 768), tf.float32, name="inputs_embeds"),
-        "attention_mask": tf.TensorSpec((None, None), tf.int32, name="attention_mask"),
+        "inputs_ids": tf.TensorSpec((None, None), tf.int64, name="input_ids"),
     }])
     def serving(self, inputs):
         # call the model to process the inputs
-        output = self.call(inputs)
+        output = self.generate(inputs["input_ids"])
 
         # return the formated output
         return self.serving_output(output)
@@ -26,8 +25,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Instantiate the model with the new serving method
     print("loading model...")
-    model = ModifiedModel.from_pretrained(args.from_path)
-    # save it with saved_model=True in order to have a SavedModel version along with the h5 weights.
+    model = ModifiedModel.from_pretrained("facebook/bart-large-xsum")
     print("saving model with a different signature...")
-    model.save(args.save_to, save_format="tf")
+    model.save("bart-large-xsum", save_format="tf")
 

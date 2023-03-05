@@ -35,6 +35,6 @@ if __name__ == "__main__":
     print("loading model...")
     model = GenerationModel.from_pretrained("facebook/bart-large-xsum")
     print("saving model with a different signature...")
-    tf.saved_model.save(model, args.save_to, signatures={'serving': model.serving})
+    tf.saved_model.save(model, args.save_to, signatures={'serving_default': model.serving})
     # model.save_pretrained(args.save_to, saved_model=True)
 

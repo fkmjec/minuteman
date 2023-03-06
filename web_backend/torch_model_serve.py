@@ -36,15 +36,6 @@ class TransformersClassifierHandler(BaseHandler):
 
         logger.debug('Transformer model from path {0} loaded successfully'.format(model_dir))
 
-        # Read the mapping file, index to object name
-        mapping_file_path = os.path.join(model_dir, "index_to_name.json")
-
-        if os.path.isfile(mapping_file_path):
-            with open(mapping_file_path) as f:
-                self.mapping = json.load(f)
-        else:
-            logger.warning('Missing the index_to_name.json file. Inference output will not include class name.')
-
         self.initialized = True
 
     def preprocess(self, data):
@@ -68,20 +59,15 @@ class TransformersClassifierHandler(BaseHandler):
         """
         Predict the class of a text using a trained transformer model.
         """
-        # NOTE: This makes the assumption that your model expects text to be tokenized  
-        # with "input_ids" and "token_type_ids" - which is true for some popular transformer models, e.g. bert.
-        # If your transformer model expects different tokenization, adapt this code to suit 
-        # its expected input format.
-        prediction = self.model(
+        prediction = self.model.generate(
             inputs['input_ids'].to(self.device), 
-            token_type_ids=inputs['token_type_ids'].to(self.device)
+            # token_type_ids=inputs['token_type_ids'].to(self.device)
         )
-        logger.info("Model predicted: '%s'", prediction)
 
-        if self.mapping:
-            prediction = self.mapping[str(prediction)]
+        string_pred = self.tokenizer.batch_decode(prediction, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        logger.info("Model predicted: '%s'", string_pred)
 
-        return prediction
+        return string_pred
 
     def postprocess(self, inference_output):
         # TODO: Add any needed post-processing of the model predictions here

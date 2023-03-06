@@ -1,0 +1,24 @@
+02-28
+    tensorflow serving nevím jestli umí i tokenizer, zatím v servingu pouštím jen model
+    model puštěn pomocí - docker run -t --rm -p 8501:8501 -v "/home/kmjec/projects/summarizer/models/final_finetuned:/models/final_finetuned" -e MODEL_NAME="final_finetuned" tensorflow/serving
+03-01
+   https://github.com/dimitreOliveira/hf_tf_serving_examples
+   jak udělat request na TF serving?
+    -> naprogramováno
+   chybí decoder input ids, model je potřeba savenout jinak, změnit vstupní signature
+03-05
+   Nejde to uložit se správnou signature
+   pokud se pokusím uložit automodel, přepíše to ten subclass, tedy se mi nepřepíšou metody, to byl jeden bug (omg jak mi to mohlo trvat tak dlouho)
+   https://github.com/huggingface/transformers/issues/18707
+   T5 je podobný pain na nasazení
+   s Tensorflow Serving to prostě asi nepůjde, ffs
+03-06
+   Torch serve vypadá mnohem příjemněji na používání
+   pěkný tutorial na deploy zde https://medium.com/analytics-vidhya/deploy-huggingface-s-bert-to-production-with-pytorch-serve-27b068026d18
+   umí to custom serving funkci out of the box zabalenou do toho balíčku s modelem, což je super
+   výroba MAR file
+      torch-model-archiver --model-name "bart-large-xsum" --version 1.0 --serialized-file ./pytorch_model.bin --extra-files "./config.json,./generation_config.json" --handler "../torch_model_serve.py
+   jak přesně funguje ten serving? Potřebuje vždycky tf.function? - dotaz na Straku
+   do ASR modelů se cpou vícevteřinová okénka - 4 vteřiny/8 vteřin, Peter Polák
+      prodloužení hypotézy, jen, když se dvě okénka shodnou
+      ozvat se mu na mail, je v Americe

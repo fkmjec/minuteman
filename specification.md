@@ -10,7 +10,6 @@
 ### high-level
     * user input resembling the one found on Charles Translator
         * reasonably fast reloads on transcript change
-        * 
     * API for use in Google docs with live transcripts
     * data collection for debugging models
 
@@ -24,10 +23,7 @@
     * WTForms
     * FrontEnd - hopefully just vanilla JS, nothing fancy
         * React?
-    * Tensorflow Serving
-    * Tensor2Tensor for requests to backend
-        * https://github.com/ufal/lindat-translation/blob/master/app/models/t2t_model.py, line with "_do_send_request"
-        * https://huggingface.co/blog/tf-serving
+    * TorchServe for serving (much easier getting the transformers to work)
 
 ## current TODO
     * implement a simple flask backend

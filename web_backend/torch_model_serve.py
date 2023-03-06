@@ -67,7 +67,7 @@ class TransformersClassifierHandler(BaseHandler):
         string_pred = self.tokenizer.batch_decode(prediction, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         logger.info("Model predicted: '%s'", string_pred)
 
-        return string_pred
+        return [string_pred]
 
     def postprocess(self, inference_output):
         # TODO: Add any needed post-processing of the model predictions here

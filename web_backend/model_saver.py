@@ -1,4 +1,4 @@
-from transformers import TFBartForConditionalGeneration, TFT5ForConditionalGeneration
+from transformers import TFBartForConditionalGeneration, TFT5ForConditionalGeneration, BartForConditionalGeneration
 import tensorflow as tf
 
 import argparse
@@ -37,17 +37,18 @@ class T5GenerationModel(TFT5ForConditionalGeneration):
     }])
     def serving(self, inputs):
         # call the model to process the inputs
-        output = self.generate(inputs["input_ids"], attention_mask=inputs["attention_mask"])
+        output = self.generate([inputs["input_ids"], inputs["attention_mask"]])
 
         # return the formated output
         return self.serving_output(output)
+
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
     # Instantiate the model with the new serving method
     print("loading model...")
-    model = T5GenerationModel.from_pretrained("spacemanidol/flan-t5-large-xsum")
+    model = BartForConditionalGeneration.from_pretrained(args.from_path)
     print("saving model with a different signature...")
-    tf.saved_model.save(model, args.save_to, signatures={'serving_default': model.serving})
-    # model.save_pretrained(args.save_to, saved_model=True)
+    model.save_pretrained(args.save_to)
 

@@ -29,7 +29,7 @@ class TransformersClassifierHandler(BaseHandler):
 
         # Read model serialize/pt file
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-xsum")
 
         self.model.to(self.device)
         self.model.eval()

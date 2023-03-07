@@ -26,7 +26,12 @@
         </form>
     </div>
     <div class="minutes">
-        {{ minutes }}
+        {% for split, minute in output %}
+            split:
+            <p class="split">{{ split }}</p>
+            minute:
+            <p class="minute">{{ minute }}</p>
+        {% endfor %}
     </div>
 </div>
 

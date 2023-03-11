@@ -13,4 +13,4 @@ services:
      - "8081:8081"
     command: torchserve --start --model-store torch_model_dir/ --models bart=bart-large-xsum.mar
     volumes:
-     - ./src:/src
+     - ./torch_model_dir:/torch_model_dir

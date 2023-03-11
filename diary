@@ -22,3 +22,17 @@
    do ASR modelů se cpou vícevteřinová okénka - 4 vteřiny/8 vteřin, Peter Polák
       prodloužení hypotézy, jen, když se dvě okénka shodnou
       ozvat se mu na mail, je v Americe
+   vyzkouším requesty na API
+   napíšu to do Flasku
+03-07
+   mám splitující aplikaci, yaay
+   real-time whisper: https://github.com/davabase/whisper_real_time
+   chtěl bych
+      celou tu věc dockerizovat
+         dockerfile na TorchServe (model + whisper), 
+      dorvat to do takové formy, kdy na to skutečně můžu přesměrovat veřejnost
+03-10
+   https://testdriven.io/blog/dockerizing-flask-with-postgres-gunicorn-and-nginx/
+   dockerizace flaskové aplikace
+   bacha, používat pip freeze -l
+

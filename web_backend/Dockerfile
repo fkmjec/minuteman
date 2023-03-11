@@ -24,4 +24,3 @@ ENV PATH "$PATH:/home/app/.local/bin"
 RUN pip install --upgrade pip && pip install --no-cache /wheels/* 
 COPY . .
 
-ENTRYPOINT ["./run_gunicorn.sh"]

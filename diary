@@ -31,8 +31,12 @@
       celou tu věc dockerizovat
          dockerfile na TorchServe (model + whisper), 
       dorvat to do takové formy, kdy na to skutečně můžu přesměrovat veřejnost
-03-10
+03-11
    https://testdriven.io/blog/dockerizing-flask-with-postgres-gunicorn-and-nginx/
    dockerizace flaskové aplikace
    bacha, používat pip freeze -l
-
+   jitsi recording - https://github.com/jitsi/lib-jitsi-meet/tree/master/modules/transcription
+   lib-jitsi-meet je way to go
+03-12
+   žere to strašně moc paměti, když to pustím na SLT, nevím, čím to je
+   whisper tutorial: https://lablab.ai/t/whisper-tutorial

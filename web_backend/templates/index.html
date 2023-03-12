@@ -3,6 +3,14 @@
 
 {% block main %}
 <div>
+    <div class="jitsi">
+        <a href="#" onclick="unload()">Unload</a>
+        <a href="#" onclick="switchVideo()">switchVideo</a>
+        <div id="audioOutputSelectWrapper" style="display: none;">
+            Change audio output device
+            <select id="audioOutputSelect" onchange="changeAudioOutput(this)"></select>
+        </div>
+    </div>
     <h1>Minuteman</h1>
     <div class="transcript-input">
         <form method="POST" action="/">

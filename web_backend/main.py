@@ -27,7 +27,7 @@ def index():
     if form.validate_on_submit():
         splits = text_utils.split_to_lens(form.transcript.data, MAX_INPUT_LEN, tokenizer)
         if USE_BACKEND_MODEL:
-            minutes = [api_interface.summarize_block(minute) for minute in minutes]
+            minutes = [api_interface.summarize_block(split) for split in splits]
         else:
             minutes = splits
     return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))

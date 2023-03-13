@@ -40,3 +40,14 @@
 03-12
    žere to strašně moc paměti, když to pustím na SLT, nevím, čím to je
    whisper tutorial: https://lablab.ai/t/whisper-tutorial
+   audio recording jitsi https://github.com/jitsi/lib-jitsi-meet/blob/master/modules/transcription/audioRecorder.js
+   => umím posílat raw data na server! Yes! big W
+03-13
+   víc řečníků na jednom kanálu
+      zatím nebudu řešit
+   bakalářka - Overleaf - poslat odkaz
+      založit dokument
+   22-24.3. titulkování - konflikt na SLT
+   devel@ufal - technické dotazy
+   SLT - běh na GPUčku
+   v úterý v devět nebo potom - napsat Kubovi Paradovi

@@ -3,13 +3,20 @@ from forms import TranscriptInputForm
 from transformers import BartTokenizer
 import api_interface
 import text_utils
+import logging
+
 
 app = Flask(__name__)
+# FIXME: stop commiting this to git!
 app.config['SECRET_KEY'] = 'lkajflkejfnlaneom zo3r0194fnoaijl'
+gunicorn_logger = logging.getLogger('gunicorn.error')
+app.logger.handlers = gunicorn_logger.handlers
+app.logger.setLevel(gunicorn_logger.level)
+
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 
 MAX_INPUT_LEN = 512
-USE_BACKEND_MODEL = False
+USE_BACKEND_MODEL = True
 
 @app.route("/", methods=["GET", "POST"])
 def index():

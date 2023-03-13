@@ -14,3 +14,10 @@ services:
     command: torchserve --start --model-store /torch_model_dir --models bart=bart-large-xsum.mar
     volumes:
      - ./torch_model_dir:/torch_model_dir
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

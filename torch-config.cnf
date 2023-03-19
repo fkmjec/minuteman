@@ -1,0 +1,4 @@
+# bind inference API to all network interfaces with SSL enabled
+inference_address=http://0.0.0.0:8084
+management_address=http://0.0.0.0:8085
+metrics_address=http://0.0.0.0:8086

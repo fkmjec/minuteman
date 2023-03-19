@@ -1,7 +1,7 @@
 import requests
 
 # TODO: this belongs somewhere systematic
-TORCH_API_ADDRESS = "http://torchserve:8080/predictions/bart"
+TORCH_API_ADDRESS = "http://torchserve:8084/predictions/bart"
 
 def _prepare_request_data_files(model_input_string):
     files = {'data': ('model_input.txt', model_input_string)}

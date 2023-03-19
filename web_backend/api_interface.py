@@ -10,4 +10,4 @@ def _prepare_request_data_files(model_input_string):
 def summarize_block(input_string):
     files = _prepare_request_data_files(input_string)
     response = requests.post(TORCH_API_ADDRESS, files=files)
-    return response
+    return response.text

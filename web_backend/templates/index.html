@@ -6,9 +6,9 @@
     <div class="jitsi">
         <a href="#" onclick="unload()">Unload</a>
         <a href="#" onclick="switchVideo()">switchVideo</a>
-        <div id="audioOutputSelectWrapper" style="display: none;">
-            Change audio output device
-            <select id="audioOutputSelect" onchange="changeAudioOutput(this)"></select>
+        <div id="audioOutputSelectWrapper">
+            <input id="roomSelect" ></input>
+            <input type="button" value="Select room" onclick="onRoomSelect()" />
         </div>
     </div>
     <h1>Minuteman</h1>

@@ -11,3 +11,6 @@ def summarize_block(input_string):
     files = _prepare_request_data_files(input_string)
     response = requests.post(TORCH_API_ADDRESS, files=files)
     return response.text
+
+def transcribe_chunk(chunk):
+    return "TODO: transcribe chunk"

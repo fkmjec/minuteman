@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
 import api_interface
@@ -31,3 +31,9 @@ def index():
         else:
             minutes = splits
     return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))
+
+@app.route("/transcribe", methods=["POST"])
+def transcribe():
+    # we assume the chunk is a ~30 second wav file
+    chunk = request.data
+    return jsonify({"transcript": api_interface.transcribe_chunk(chunk)})

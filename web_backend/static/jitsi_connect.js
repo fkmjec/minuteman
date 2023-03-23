@@ -15,7 +15,6 @@ function Transcriber() {
     this.isJoined = false;
     this.room = null;
     
-    this.localTracks = [];
     this.remoteTracks = {};
 
     // TODO: transfer this to init constants somewhere
@@ -45,19 +44,9 @@ Transcriber.prototype.connect = function() {
     connection.addEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         this.disconnect.bind(this));
-    
-    // JitsiMeetJS.mediaDevices.addEventListener(
-    //     JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
-    //     this.onDeviceListChanged.bind(this));
-    
+        
     connection.connect();
-    
-    JitsiMeetJS.createLocalTracks({ devices: [ 'audio', 'video' ] })
-        .then(this.onLocalTracks.bind(this))
-        .catch(error => {
-            throw error;
-        });
-    
+        
     if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
         JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
             const audioOutputDevices
@@ -103,9 +92,6 @@ Transcriber.prototype.connect = function() {
  Transcriber.prototype.onConferenceJoined = function() {
     console.log('conference joined!');
     this.isJoined = true;
-    for (let i = 0; i < this.localTracks.length; i++) {
-        this.room.addTrack(this.localTracks[i]);
-    }
 }
 
 /**
@@ -123,19 +109,6 @@ Transcriber.prototype.connect = function() {
     }
     const idx = this.remoteTracks[participant].push(track);
 
-    // track.addEventListener(
-    //     JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
-    //     audioLevel => console.log(`Audio Level remote: ${audioLevel}`));
-    // track.addEventListener(
-    //     JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
-    //     () => console.log('remote track muted'));
-    // track.addEventListener(
-    //     JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
-    //     () => console.log('remote track stoped'));
-    // track.addEventListener(JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED,
-    //     deviceId =>
-    //         console.log(
-    //             `track audio output device was changed to ${deviceId}`));
     const id = participant + track.getType() + idx;
     // FIXME: do I need this?
     if (track.getType() === 'audio') {
@@ -143,38 +116,6 @@ Transcriber.prototype.connect = function() {
             `<audio autoplay='1' id='${participant}audio${idx}' />`);
     }
     track.attach($(`#${id}`)[0]);
-}
-
-/**
- * Handles local tracks.
- * @param tracks Array with JitsiTrack objects
- */
- Transcriber.prototype.onLocalTracks = function(tracks) {
-    this.localTracks = tracks;
-    for (let i = 0; i < this.localTracks.length; i++) {
-        // localTracks[i].addEventListener(
-        //     JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
-        //     audioLevel => console.log(`Audio Level local: ${audioLevel}`));
-        // localTracks[i].addEventListener(
-        //     JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
-        //     () => console.log('local track muted'));
-        // localTracks[i].addEventListener(
-        //     JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
-        //     () => console.log('local track stoped'));
-        // localTracks[i].addEventListener(
-        //     JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED,
-        //     deviceId =>
-        //         console.log(
-        //             `track audio output device was changed to ${deviceId}`));
-        if (this.localTracks[i].getType() === 'audio') {
-            $('body').append(
-                `<audio autoplay='1' muted='true' id='localAudio${i}' />`);
-            this.localTracks[i].attach($(`#localAudio${i}`)[0]);
-        }
-        if (this.isJoined) {
-            this.room.addTrack(this.localTracks[i]);
-        }
-    }
 }
 
 
@@ -237,9 +178,6 @@ Transcriber.prototype.onRoomSelect = function() {
  *
  */
  Transcriber.prototype.unload = function() {
-    for (let i = 0; i < this.localTracks.length; i++) {
-        this.localTracks[i].dispose();
-    }
     if (this.room) {
         this.room.leave();
     }

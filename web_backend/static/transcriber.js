@@ -1,15 +1,19 @@
-/**
- *
- * @param selected
- */
-function changeAudioOutput(selected) { // eslint-disable-line no-unused-vars
-    JitsiMeetJS.mediaDevices.setAudioOutputDevice(selected.value);
-}
+import AudioRecorder from './recorder.js'
+
+// /**
+//  *
+//  * @param selected
+//  */
+// function changeAudioOutput(selected) { // eslint-disable-line no-unused-vars
+//     JitsiMeetJS.mediaDevices.setAudioOutputDevice(selected.value);
+// }
 
 
 function Transcriber() {
     this.confOptions = {
     };
+
+    this.audioRecorder = null;
     
     this.connection = null;
     this.isJoined = false;
@@ -111,12 +115,7 @@ Transcriber.prototype.connect = function() {
     const idx = this.remoteTracks[participant].push(track);
 
     const id = participant + track.getType() + idx;
-    // FIXME: do I need this?
-    // if (track.getType() === 'audio') {
-    //     $('body').append(
-    //         `<audio autoplay='1' id='${participant}audio${idx}' />`);
-    // }
-    track.attach($(`#${id}`)[0]);
+    console.info(track);
 }
 
 
@@ -188,18 +187,4 @@ Transcriber.prototype.onRoomSelect = function() {
 }
 
 
-// JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
-// TODO move to a better location
-const initOptions = {
-    disableAudioLevels: true
-};
-
-let transcriber = new Transcriber();
-
-console.info(transcriber.connection)
-
-transcriber.initJitsi(initOptions);
-
-$(window).bind('beforeunload', transcriber.unload.bind(transcriber));
-$(window).bind('unload', transcriber.unload.bind(transcriber));
-// transcriber.connect();
+export default Transcriber;

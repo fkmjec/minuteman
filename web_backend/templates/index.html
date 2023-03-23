@@ -4,11 +4,10 @@
 {% block main %}
 <div>
     <div class="jitsi">
-        <a href="#" onclick="unload()">Unload</a>
-        <a href="#" onclick="switchVideo()">switchVideo</a>
+        <a href="#" onclick="transcriber.unload()">Disconnect</a>
         <div id="audioOutputSelectWrapper">
             <input id="roomSelect" ></input>
-            <input type="button" value="Select room" onclick="onRoomSelect()" />
+            <input type="button" value="Select room" onclick="transcriber.onRoomSelect()" />
         </div>
     </div>
     <h1>Minuteman</h1>

@@ -104,7 +104,7 @@ Transcriber.prototype.connect = function() {
  * @param track JitsiTrack object
  */
  Transcriber.prototype.onRemoteTrack = function(track) {
-    if (track.isLocal()) {
+    if (track.isLocal() || track.type === 'video') {
         return;
     }
     const participant = track.getParticipantId();

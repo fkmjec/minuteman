@@ -73,6 +73,7 @@ Transcriber.prototype.connect = function() {
  Transcriber.prototype.onConnectionSuccess = function() {
     console.info(this)
     this.room = this.connection.initJitsiConference(this.options.roomName, this.confOptions);
+    this.room.setDisplayName("Minuteman")
     this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
     this.room.on(
         JitsiMeetJS.events.conference.CONFERENCE_JOINED,
@@ -111,10 +112,10 @@ Transcriber.prototype.connect = function() {
 
     const id = participant + track.getType() + idx;
     // FIXME: do I need this?
-    if (track.getType() === 'audio') {
-        $('body').append(
-            `<audio autoplay='1' id='${participant}audio${idx}' />`);
-    }
+    // if (track.getType() === 'audio') {
+    //     $('body').append(
+    //         `<audio autoplay='1' id='${participant}audio${idx}' />`);
+    // }
     track.attach($(`#${id}`)[0]);
 }
 

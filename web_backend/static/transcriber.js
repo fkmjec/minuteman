@@ -19,7 +19,7 @@ function Transcriber() {
     this.isJoined = false;
     this.room = null;
     
-    this.remoteTracks = {};
+    this.tracks = {};
 
     // TODO: transfer this to init constants somewhere
     this.options = {
@@ -79,15 +79,22 @@ Transcriber.prototype.connect = function() {
     this.room = this.connection.initJitsiConference(this.options.roomName, this.confOptions);
     this.room.setDisplayName("Minuteman")
     this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
+    // TODO: stop recording on removed tracks?
+    this.room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
+        console.log(`track removed!!!${track}`);
+        this.onRemoveRemoteTrack(track);
+    });
     this.room.on(
         JitsiMeetJS.events.conference.CONFERENCE_JOINED,
         this.onConferenceJoined.bind(this));
     this.room.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
         console.log('user join');
-        this.remoteTracks[id] = [];
+        this.tracks[id] = [];
     });
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
+    this.audioRecorder = new AudioRecorder(this.room);
+    this.audioRecorder.start();
 }
 
 
@@ -105,17 +112,23 @@ Transcriber.prototype.connect = function() {
  */
  Transcriber.prototype.onRemoteTrack = function(track) {
     if (track.isLocal() || track.type === 'video') {
+        // only record outside and audio tracks
         return;
     }
     const participant = track.getParticipantId();
 
-    if (!this.remoteTracks[participant]) {
-        this.remoteTracks[participant] = [];
+    if (!this.tracks[participant]) {
+        this.tracks[participant] = [];
     }
-    const idx = this.remoteTracks[participant].push(track);
+    const idx = this.tracks[participant].push(track);
 
     const id = participant + track.getType() + idx;
+    this.audioRecorder.addTrack(track);
     console.info(track);
+}
+
+Transcriber.prototype.onRemoveRemoteTrack = function(track) {
+    this.audioRecorder.removeTrack(track);
 }
 
 
@@ -125,10 +138,10 @@ Transcriber.prototype.connect = function() {
  */
  Transcriber.prototype.onUserLeft = function(id) {
     console.log('user left');
-    if (!this.remoteTracks[id]) {
+    if (!this.tracks[id]) {
         return;
     }
-    const tracks = this.remoteTracks[id];
+    const tracks = this.tracks[id];
 
     for (let i = 0; i < tracks.length; i++) {
         tracks[i].detach($(`#${id}${tracks[i].getType()}`));

@@ -1,3 +1,4 @@
+import transcribeBlob from './api_interface.js';
 /**
  * A TrackRecorder object holds all the information needed for recording a
  * single JitsiTrack (either remote or local)
@@ -152,6 +153,8 @@ AudioRecorder.prototype.instantiateTrackRecorder = function(track) {
     trackRecorder.recorder.ondataavailable = function(dataEvent) {
         if (dataEvent.data.size > 0) {
             trackRecorder.data.push(dataEvent.data);
+            console.info(transcribeBlob(dataEvent.data));
+            console.info(trackRecorder.data.length);
         }
     };
 

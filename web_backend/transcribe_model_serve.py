@@ -7,20 +7,9 @@ import whisper
 import uuid
 from pathlib import Path
 
-
 from whisper.decoding import DecodingOptions, DecodingResult
 from torch.profiler import ProfilerActivity
 
-# ipex_enabled = False
-# if os.environ.get("TS_IPEX_ENABLE", "false") == "true":
-#     try:
-#         import intel_extension_for_pytorch as ipex
-
-#         ipex_enabled = True
-#     except ImportError as error:
-#         logging.warning(
-#             "IPEX is enabled but intel-extension-for-pytorch is not installed. Proceeding without IPEX."
-#         )
 
 class WhisperHandler(BaseHandler):
     def __init__(self):

@@ -1,32 +1,5 @@
-import transcribeBlob from './api_interface.js';
-/**
- * A TrackRecorder object holds all the information needed for recording a
- * single JitsiTrack (either remote or local)
- * @param track The JitsiTrack the object is going to hold
- */
- class TrackRecorder {
-    /**
-     * @param track The JitsiTrack the object is going to hold
-     */
-    constructor(track) {
-        // The JitsiTrack holding the stream
-        this.track = track;
-
-        // The MediaRecorder recording the stream
-        this.recorder = null;
-
-        // The array of data chunks recorded from the stream
-        // acts as a buffer until the data is stored on disk
-        this.data = null;
-
-        // the name of the person of the JitsiTrack. This can be undefined and/or
-        // not unique
-        this.name = null;
-
-        // the time of the start of the recording
-        this.startTime = null;
-    }
-}
+import transcribeBlob from './apiInterface.js';
+import { TrackRecorder, stopRecorder, startRecorder } from './trackRecorder.js';
 
 
 /**
@@ -35,32 +8,6 @@ import transcribeBlob from './api_interface.js';
 const AUDIO_WEBM = 'audio/webm'; // Supported in chrome
 const AUDIO_OGG = 'audio/ogg'; // Supported in firefox
 
-/**
- * Starts the recording of a JitsiTrack in a TrackRecorder object.
- * This will also define the timestamp and try to update the name
- * @param trackRecorder the TrackRecorder to start
- */
-function startRecorder(trackRecorder) {
-    if (trackRecorder.recorder === undefined) {
-        throw new Error('Passed an object to startRecorder which is not a '
-            + 'TrackRecorder object');
-    }
-    trackRecorder.recorder.start();
-    trackRecorder.startTime = new Date();
-}
-
-/**
- * Stops the recording of a JitsiTrack in a TrackRecorder object.
- * This will also try to update the name
- * @param trackRecorder the TrackRecorder to stop
- */
-function stopRecorder(trackRecorder) {
-    if (trackRecorder.recorder === undefined) {
-        throw new Error('Passed an object to stopRecorder which is not a '
-            + 'TrackRecorder object');
-    }
-    trackRecorder.recorder.stop();
-}
 
 /**
  * Determines which kind of audio recording the browser supports
@@ -82,7 +29,7 @@ function determineCorrectFileType() {
  * @param jitsiConference the jitsiConference which this object
  * is going to record
  */
-function AudioRecorder(jitsiConference) {
+function AudioRecorder(jitsiConference, timeslice, maxUtteranceLen) {
     // array of TrackRecorders, where each trackRecorder
     // holds the JitsiTrack, MediaRecorder and recorder data
     this.recorders = [];
@@ -92,6 +39,10 @@ function AudioRecorder(jitsiConference) {
 
     // boolean flag for active recording
     this.isRecording = false;
+
+    // the timeslice after which we get data from the MediaRecorders
+    this.timeslice = timeslice;
+    this.maxUtteranceLen = maxUtteranceLen;
 
     // the jitsiconference the object is recording
     this.jitsiConference = jitsiConference;
@@ -133,7 +84,7 @@ AudioRecorder.prototype.addTrack = function(track) {
  * @param track the JitsiTrack holding the audio MediaStream(s)
  */
 AudioRecorder.prototype.instantiateTrackRecorder = function(track) {
-    const trackRecorder = new TrackRecorder(track);
+    const trackRecorder = new TrackRecorder(track, this.timeslice, this.maxUtteranceLen);
 
     // Create a new stream which only holds the audio track
     const originalStream = trackRecorder.track.getOriginalStream();
@@ -152,9 +103,7 @@ AudioRecorder.prototype.instantiateTrackRecorder = function(track) {
     // function handling a dataEvent, e.g the stream gets new data
     trackRecorder.recorder.ondataavailable = function(dataEvent) {
         if (dataEvent.data.size > 0) {
-            trackRecorder.data.push(dataEvent.data);
-            console.info(transcribeBlob(dataEvent.data));
-            console.info(trackRecorder.data.length);
+            trackRecorder.handleData(dataEvent);
         }
     };
 
@@ -251,32 +200,7 @@ AudioRecorder.prototype.stop = function() {
     this.recorders.forEach(trackRecorder => stopRecorder(trackRecorder));
     console.log('stopped recording');
 };
-/**
- * returns the audio files of all recorders as an array of objects,
- * which include the name of the owner of the track and the starting time stamp
- * @returns {Array} an array of RecordingResult objects
- */
-// AudioRecorder.prototype.getRecordingResults = function() {
-//     if (this.isRecording) {
-//         throw new Error(
-//             'cannot get blobs because the AudioRecorder is still recording!');
-//     }
 
-//     // make sure the names are up to date before sending them off
-//     this.updateNames();
-
-//     const array = [];
-
-//     this.recorders.forEach(
-//         recorder =>
-//             array.push(
-//                 new RecordingResult(
-//                     new Blob(recorder.data, { type: this.fileType }),
-//                     recorder.name,
-//                     recorder.startTime)));
-
-//     return array;
-// };
 
 /**
  * Gets the mime type of the recorder audio

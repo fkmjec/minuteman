@@ -1,5 +1,8 @@
 import AudioRecorder from './recorder.js'
 
+const AUDIO_RECORD_SLICE = 1000;
+const MAX_UTTERANCE_LEN = 10000;
+
 // /**
 //  *
 //  * @param selected
@@ -93,7 +96,7 @@ Transcriber.prototype.connect = function() {
     });
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
-    this.audioRecorder = new AudioRecorder(this.room);
+    this.audioRecorder = new AudioRecorder(this.room, AUDIO_RECORD_SLICE, MAX_UTTERANCE_LEN);
     this.audioRecorder.start();
 }
 
@@ -172,6 +175,9 @@ Transcriber.prototype.onConnectionFailed = function() {
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         // FIXME: does this make sense?
         this.disconnect.bind(this));
+    // TODO remove all references to audio recording
+    this.audioRecorder.stop();
+    this.audioRecorder = null;
 }
 
 Transcriber.prototype.onRoomSelect = function() {

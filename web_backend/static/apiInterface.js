@@ -1,4 +1,5 @@
 // the file with all the requests to the backend API
+// TODO: based on a domain
 const API_URL = 'http://localhost:5000/transcribe';
 
 async function transcribeBlob(blob) {

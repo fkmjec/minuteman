@@ -8,7 +8,7 @@ services:
       - 7777:7777
   torchserve:
     image: pytorch/torchserve:latest-gpu
-    command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar
+    command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
     volumes:
      - ./torch_model_dir:/torch_model_dir
      - ./torch-config.cnf:/torch-config.cnf

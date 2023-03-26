@@ -61,7 +61,7 @@ AudioRecorder.determineCorrectFileType = determineCorrectFileType;
 AudioRecorder.prototype.addTrack = function(track) {
     if (track.isAudioTrack()) {
         // create the track recorder
-        const trackRecorder = this.instantiateTrackRecorder(track);
+        const trackRecorder = new TrackRecorder(track, this.timeslice, this.maxUtteranceLen, this.fileType);
 
         // push it to the local array of all recorders
 
@@ -78,37 +78,6 @@ AudioRecorder.prototype.addTrack = function(track) {
     }
 };
 
-/**
- * Creates a TrackRecorder object. Also creates the MediaRecorder and
- * data array for the trackRecorder.
- * @param track the JitsiTrack holding the audio MediaStream(s)
- */
-AudioRecorder.prototype.instantiateTrackRecorder = function(track) {
-    const trackRecorder = new TrackRecorder(track, this.timeslice, this.maxUtteranceLen);
-
-    // Create a new stream which only holds the audio track
-    const originalStream = trackRecorder.track.getOriginalStream();
-    const stream = new MediaStream();
-
-    originalStream.getAudioTracks().forEach(t => stream.addTrack(t));
-
-    // Create the MediaRecorder
-    trackRecorder.recorder = new MediaRecorder(stream,
-        { mimeType: this.fileType });
-
-    // array for holding the recorder data. Resets it when
-    // audio already has been recorder once
-    trackRecorder.data = [];
-
-    // function handling a dataEvent, e.g the stream gets new data
-    trackRecorder.recorder.ondataavailable = function(dataEvent) {
-        if (dataEvent.data.size > 0) {
-            trackRecorder.handleData(dataEvent);
-        }
-    };
-
-    return trackRecorder;
-};
 
 /**
  * Notifies the module that a specific track has stopped, e.g participant left

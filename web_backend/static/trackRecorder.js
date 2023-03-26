@@ -1,5 +1,19 @@
 import transcribeBlob from "./apiInterface.js";
 
+function getTrackMediaRecorder(track, fileType) {
+    // Create a new stream which only holds the audio track
+    const originalStream = track.getOriginalStream();
+    const stream = new MediaStream();
+
+    originalStream.getAudioTracks().forEach(t => stream.addTrack(t));
+
+    // Create the MediaRecorder
+    let recorder = new MediaRecorder(stream,
+        { mimeType: fileType });
+
+    return recorder;
+}
+
 /**
  * A TrackRecorder object holds all the information needed for recording a
  * single JitsiTrack (either remote or local)
@@ -10,16 +24,22 @@ import transcribeBlob from "./apiInterface.js";
      * @param track The JitsiTrack the object is going to hold
      * @param timeslice The timeslice to use for the MediaRecorder
      */
-    constructor(track, timeslice, maxUtteranceLen) {
+    constructor(track, timeslice, maxUtteranceLen, fileType) {
         // The JitsiTrack holding the stream
         this.track = track;
+        this.fileType = fileType;
 
-        // The MediaRecorder recording the stream
-        this.recorder = null;
+        this.recorder = getTrackMediaRecorder(track, this.fileType);
+        // function handling a dataEvent, e.g the stream gets new data
+        // FIXME: how to ditch the bind?
+        let mediaRecorder = this;
+        this.recorder.ondataavailable = function(dataEvent) {
+            if (dataEvent.data.size > 0) {
+                mediaRecorder.handleData(dataEvent);
+            }
+        };
 
-        // The array of data chunks recorded from the stream
-        // acts as a buffer until the data is stored on disk
-        this.data = null;
+        this.data = [];
 
         // the name of the person of the JitsiTrack. This can be undefined and/or
         // not unique
@@ -52,11 +72,22 @@ import transcribeBlob from "./apiInterface.js";
 
     sendActiveData() {
         // merge the data chunks into a single blob
+        this.recorder.ondataavailable = null;
         const blob = new Blob(this.data, { type: 'audio/webm' });
         transcribeBlob(blob);
-        this.stop();
-        this.start();
+        this.getNewRecorder(this.track);
         this.data = [];
+    }
+
+    getNewRecorder(track) {
+        this.recorder = getTrackMediaRecorder(track, this.fileType);
+        // FIXME: how to ditch the bind?        
+        let mediaRecorder = this;
+        this.recorder.ondataavailable = function(dataEvent) {
+            if (dataEvent.data.size > 0) {
+                mediaRecorder.handleData(dataEvent);
+            }
+        }
     }
 
     /**

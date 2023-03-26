@@ -75,7 +75,8 @@ function getTrackMediaRecorder(track, fileType) {
         // merge the data chunks into a single blob
         this.recorder.ondataavailable = null;
         const blob = new Blob(this.data, { type: 'audio/webm' });
-        transcript = transcribeBlob(blob)['transcript'];
+        const transcript = transcribeBlob(blob).transcript;
+        console.info(transcript);
         this.transcripts.push(transcript);
         this.getNewRecorder(this.track);
         this.data = [];

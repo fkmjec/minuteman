@@ -40,6 +40,7 @@ function getTrackMediaRecorder(track, fileType) {
         };
 
         this.data = [];
+        this.transcripts = [];
 
         // the name of the person of the JitsiTrack. This can be undefined and/or
         // not unique
@@ -74,7 +75,8 @@ function getTrackMediaRecorder(track, fileType) {
         // merge the data chunks into a single blob
         this.recorder.ondataavailable = null;
         const blob = new Blob(this.data, { type: 'audio/webm' });
-        transcribeBlob(blob);
+        transcript = transcribeBlob(blob)['transcript'];
+        this.transcripts.push(transcript);
         this.getNewRecorder(this.track);
         this.data = [];
         this.start();

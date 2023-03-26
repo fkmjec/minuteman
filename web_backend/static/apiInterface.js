@@ -11,7 +11,8 @@ async function transcribeBlob(blob) {
         body: blob,
     });
     const response = await fetch(request);
-    return response;
+    const transcriptData = await response.json();
+    return transcriptData;
 }
 
 export default transcribeBlob;

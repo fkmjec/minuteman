@@ -34,7 +34,7 @@ def index():
 
 
 @app.route("/transcribe", methods=["POST"])
-def transcribe():
+def add_transcript():
     logging.debug("Received request to transcribe")
     # we assume the chunk is a ~30 second wav file
     # print(request.data)

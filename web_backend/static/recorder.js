@@ -1,5 +1,5 @@
 import transcribeBlob from './apiInterface.js';
-import { TrackRecorder, stopRecorder, startRecorder } from './trackRecorder.js';
+import { TrackRecorder } from './trackRecorder.js';
 
 
 /**
@@ -73,7 +73,7 @@ AudioRecorder.prototype.addTrack = function(track) {
         // If we're already recording, immediately start recording this new
         // track.
         if (this.isRecording) {
-            startRecorder(trackRecorder);
+            trackRecorder.start();
         }
     }
 };
@@ -133,7 +133,7 @@ AudioRecorder.prototype.removeTrack = function(track) {
             const recorderToRemove = array[i];
 
             if (this.isRecording) {
-                stopRecorder(recorderToRemove);
+                recorderToRemove.stop();
             } else {
                 // remove the TrackRecorder from the array
                 array.splice(i, 1);
@@ -181,7 +181,7 @@ AudioRecorder.prototype.start = function() {
     this.isRecording = true;
 
     // start all the mediaRecorders
-    this.recorders.forEach(trackRecorder => startRecorder(trackRecorder));
+    this.recorders.forEach(trackRecorder => trackRecorder.start());
 
     // log that recording has started
     console.log(
@@ -197,7 +197,7 @@ AudioRecorder.prototype.stop = function() {
     this.isRecording = false;
 
     // stop all recorders
-    this.recorders.forEach(trackRecorder => stopRecorder(trackRecorder));
+    this.recorders.forEach(trackRecorder => trackRecorder.stop());
     console.log('stopped recording');
 };
 

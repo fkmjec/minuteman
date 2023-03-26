@@ -41,10 +41,21 @@ import transcribeBlob from "./apiInterface.js";
         return true;
     }
 
+    start() {
+        this.recorder.start(this.timeslice);
+        this.startTime = new Date();
+    }
+
+    stop() {
+        this.recorder.stop();
+    }
+
     sendActiveData() {
         // merge the data chunks into a single blob
         const blob = new Blob(this.data, { type: 'audio/webm' });
         transcribeBlob(blob);
+        this.stop();
+        this.start();
         this.data = [];
     }
 
@@ -68,31 +79,4 @@ import transcribeBlob from "./apiInterface.js";
 }
 
 
-/**
- * Starts the recording of a JitsiTrack in a TrackRecorder object.
- * This will also define the timestamp and try to update the name
- * @param trackRecorder the TrackRecorder to start
- */
- export function startRecorder(trackRecorder) {
-    if (trackRecorder.recorder === undefined) {
-        throw new Error('Passed an object to startRecorder which is not a '
-            + 'TrackRecorder object');
-    }
-    trackRecorder.recorder.start(trackRecorder.timeslice);
-    trackRecorder.startTime = new Date();
-}
-
-/**
- * Stops the recording of a JitsiTrack in a TrackRecorder object.
- * This will also try to update the name
- * @param trackRecorder the TrackRecorder to stop
- */
-export function stopRecorder(trackRecorder) {
-    if (trackRecorder.recorder === undefined) {
-        throw new Error('Passed an object to stopRecorder which is not a '
-            + 'TrackRecorder object');
-    }
-    trackRecorder.recorder.stop();
-}
-
-export default { TrackRecorder, startRecorder, stopRecorder };
+export default { TrackRecorder };

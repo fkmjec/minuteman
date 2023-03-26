@@ -77,6 +77,7 @@ function getTrackMediaRecorder(track, fileType) {
         transcribeBlob(blob);
         this.getNewRecorder(this.track);
         this.data = [];
+        this.start();
     }
 
     getNewRecorder(track) {

@@ -11,6 +11,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'lkajflkejfnlaneom zo3r0194fnoaijl'
 
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
+gunicorn_logger = logging.getLogger('gunicorn.error')
+app.logger.handlers = gunicorn_logger.handlers
+app.logger.setLevel("DEBUG")
 
 MAX_INPUT_LEN = 512
 USE_BACKEND_MODEL = True

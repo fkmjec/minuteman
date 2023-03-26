@@ -1,17 +1,14 @@
-from flask import Flask, render_template, request, jsonify
-from forms import TranscriptInputForm
-from transformers import BartTokenizer
-import api_interface
-import text_utils
 import logging
 
+import api_interface
+import text_utils
+from flask import Flask, jsonify, render_template, request
+from forms import TranscriptInputForm
+from transformers import BartTokenizer
 
 app = Flask(__name__)
 # FIXME: stop commiting this to git!
 app.config['SECRET_KEY'] = 'lkajflkejfnlaneom zo3r0194fnoaijl'
-gunicorn_logger = logging.getLogger('gunicorn.error')
-app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel(gunicorn_logger.level)
 
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 
@@ -32,8 +29,14 @@ def index():
             minutes = splits
     return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))
 
+
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
+    logging.debug("Received request to transcribe")
     # we assume the chunk is a ~30 second wav file
+    # print(request.data)
     chunk = request.data
-    return jsonify({"transcript": api_interface.transcribe_chunk(chunk)})
+    logging.debug("Making request to Whisper API")
+    transcribed_text = api_interface.transcribe_chunk(chunk)
+    logging.debug(f"Response from Whisper API: {transcribed_text}")
+    return jsonify({"transcript": transcribed_text})

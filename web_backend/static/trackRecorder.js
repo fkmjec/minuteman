@@ -87,7 +87,7 @@ function getTrackMediaRecorder(track, fileType) {
         transcribeBlob(blob, this.startTime, this.name, this.saveTranscript.bind(this));
         this.getNewRecorder(this.track);
         this.data = [];
-        this.start();
+        this.start(this.newUtteranceCallback);
     }
 
     getNewRecorder(track) {

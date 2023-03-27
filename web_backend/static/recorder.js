@@ -150,7 +150,7 @@ AudioRecorder.prototype.start = function(newUtteranceCallback) {
     this.isRecording = true;
     this.newUtteranceCallback = newUtteranceCallback;
     // start all the mediaRecorders
-    this.recorders.forEach(trackRecorder => trackRecorder.start(this.newUtteranceCallback));
+    this.recorders.forEach(trackRecorder => trackRecorder.start(newUtteranceCallback));
 
     // log that recording has started
     console.log(

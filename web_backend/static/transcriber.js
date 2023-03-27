@@ -1,5 +1,5 @@
 import AudioRecorder from './recorder.js'
-import { Transcript, Utterance } from './transcript.js'
+import { Transcript, Utterance } from './transcriptUtils.js'
 
 const AUDIO_RECORD_SLICE = 1000;
 const MAX_UTTERANCE_LEN = 10000;

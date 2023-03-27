@@ -1,4 +1,5 @@
 import transcribeBlob from "./apiInterface.js";
+import { Utterance } from "./transcriptUtils.js";
 
 function getTrackMediaRecorder(track, fileType) {
     // Create a new stream which only holds the audio track
@@ -49,6 +50,7 @@ function getTrackMediaRecorder(track, fileType) {
         // the time of the start of the recording
         this.startTime = null;
         this.timeslice = timeslice;
+        this.newUtteranceCallback = null;
         // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
         this.maxUtteranceLen = maxUtteranceLen;
     }
@@ -62,8 +64,9 @@ function getTrackMediaRecorder(track, fileType) {
         return true;
     }
 
-    start() {
+    start(newUtteranceCallback) {
         this.recorder.start(this.timeslice);
+        this.newUtteranceCallback = newUtteranceCallback;
         this.startTime = new Date();
     }
 
@@ -71,15 +74,17 @@ function getTrackMediaRecorder(track, fileType) {
         this.recorder.stop();
     }
 
-    saveTranscript(transcriptObject) {
-        this.transcripts.push(transcriptObject.transcript);
+    saveTranscript(transcriptObject, author, time) {
+        const utterance = new Utterance(transcriptObject.transcript, this.startTime, this.track);
+        this.newUtteranceCallback(utterance);
+        this.transcripts.push(utterance);
     }
 
     sendActiveData() {
         // merge the data chunks into a single blob
         this.recorder.ondataavailable = null;
         const blob = new Blob(this.data, { type: 'audio/webm' });
-        transcribeBlob(blob, this.saveTranscript.bind(this));
+        transcribeBlob(blob, startTime, author, this.saveTranscript.bind(this));
         this.getNewRecorder(this.track);
         this.data = [];
         this.start();

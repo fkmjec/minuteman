@@ -2,7 +2,7 @@
 // TODO: based on a domain
 const API_URL = 'http://localhost:7777/transcribe';
 
-async function transcribeBlob(blob, callback) {
+async function transcribeBlob(blob, startTime, author, callback) {
     // make a POST request to API_URL with the blob in webm as the contents
     let data = new FormData();
     data.append('chunk', blob);
@@ -12,7 +12,7 @@ async function transcribeBlob(blob, callback) {
     });
     const response = await fetch(request);
     const transcriptData = await response.json();
-    callback(transcriptData);
+    callback(transcriptData, author, startTime);
 }
 
 export default transcribeBlob;

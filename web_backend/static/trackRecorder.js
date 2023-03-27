@@ -75,7 +75,7 @@ function getTrackMediaRecorder(track, fileType) {
     }
 
     saveTranscript(transcriptObject, author, time) {
-        const utterance = new Utterance(transcriptObject.transcript, this.startTime, this.track);
+        const utterance = new Utterance(time, author, transcriptObject.transcript);
         this.newUtteranceCallback(utterance);
         this.transcripts.push(utterance);
     }

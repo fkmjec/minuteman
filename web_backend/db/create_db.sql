@@ -4,7 +4,7 @@ CREATE DATABASE minuteman;
 CREATE TABLE minuteman_session {
     id varchar(20) primary key not null,
     creation_time datetime not null,
-}
+};
 
 -- the first utterances that were recorded from the meeting, without user editing
 CREATE TABLE transcribed_utterance {

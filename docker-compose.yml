@@ -6,6 +6,7 @@ services:
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777
+
   torchserve:
     build: ./torchserve_whisper
     command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
@@ -19,3 +20,17 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+  postgres:
+    image: 'postgres'
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db:/var/lib/postgres/data
+      - ./web_backend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+volumes:
+  db:
+    driver: local

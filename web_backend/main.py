@@ -1,8 +1,9 @@
 import logging
 
 import api_interface
+import view_utils
 import text_utils
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect, url_for
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
 
@@ -10,6 +11,7 @@ app = Flask(__name__)
 # FIXME: stop commiting this to git!
 app.config['SECRET_KEY'] = 'lkajflkejfnlaneom zo3r0194fnoaijl'
 
+# FIXME: this should be more structured
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
@@ -18,8 +20,9 @@ app.logger.setLevel("DEBUG")
 MAX_INPUT_LEN = 512
 USE_BACKEND_MODEL = True
 
-@app.route("/", methods=["GET", "POST"])
-def index():
+
+@app.route("/minuting/<session_id>", methods=["GET", "POST"])
+def minuting(session_id):
     form = TranscriptInputForm()
 
     minutes = []
@@ -31,6 +34,12 @@ def index():
         else:
             minutes = splits
     return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))
+
+
+@app.route("/", methods=["GET"])
+def index():
+    id = view_utils.get_random_id(20)
+    return redirect(url_for('minuting', session_id=id))
 
 
 @app.route("/transcribe", methods=["POST"])

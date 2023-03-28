@@ -1,12 +1,15 @@
-// the file with all the requests to the backend API
 // TODO: based on a domain
-const API_URL = 'http://localhost:7777/transcribe';
+function getTranscriptionApiURL() {
+    // TODO: fix by passing values from the server
+    return window.location.origin + "/transcribe"
+}
 
 async function transcribeBlob(blob, startTime, author, callback) {
     // make a POST request to API_URL with the blob in webm as the contents
     let data = new FormData();
     data.append('chunk', blob);
-    const request = new Request(API_URL, {
+    let api_url = getTranscriptionApiURL();
+    const request = new Request(api_url, {
         method: 'POST',
         body: blob,
     });

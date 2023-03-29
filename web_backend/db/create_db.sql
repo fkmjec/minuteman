@@ -1,5 +1,3 @@
-CREATE DATABASE minuteman;
-
 -- the session that is created after the user logs into the webpage
 CREATE TABLE minuteman_session (
   id varchar(20) not null,

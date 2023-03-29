@@ -5,6 +5,7 @@ import api_interface
 import view_utils
 import text_utils
 import config
+from models import DBInterface
 from flask import Flask, jsonify, render_template, request, redirect, url_for
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
@@ -12,12 +13,13 @@ from transformers import BartTokenizer
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 
-# automatically
+# initialize global interfaces with config from env vars
 app_config = config.Config()
 torch_interface = api_interface.TorchInterface(app_config)
+db_interface = DBInterface(app_config)
+tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 
 # FIXME: this should be more structured
-tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel("DEBUG")
@@ -37,12 +39,14 @@ def minuting(session_id):
 @app.route("/", methods=["GET"])
 def index():
     id = view_utils.get_random_id(20)
+    db_interface.create_minuteman_session(id, view_utils.get_current_time())
     return redirect(url_for('minuting', session_id=id))
 
 
-@app.route("/transcribe", methods=["POST"])
-def add_transcript():
+@app.route("/transcribe/<session_id>", methods=["POST"])
+def add_transcript(session_id):
     logging.debug("Received request to transcribe")
-    chunk = request.data
+    timestamp = request.form.get("timestamp")
+    chunk = request.form.get("chunk")
     transcribed_text = torch_interface.transcribe_chunk(chunk)
     return jsonify({"transcript": transcribed_text})

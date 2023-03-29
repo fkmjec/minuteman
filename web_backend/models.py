@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 import sqlalchemy
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -10,13 +10,9 @@ class Base(DeclarativeBase):
 
 class MinutemanSession(Base):
     __tablename__ = "minuteman_session"
-    id: Mapped[str] = mapped_column(String(20), primary_key=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
     creation_time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
-    utterances: Mapped[List["TranscribedUtterance"]] = relationship("TranscribedUtterance",
-            back_populates="minuteman_session",
-            cascade="all, delete-orphan",
-            passive_deletes=True
-    )
+    utterances: Mapped[List["TranscribedUtterance"]] = relationship("TranscribedUtterance")
 
     def __init__(self, id, creation_time):
         self.id = id
@@ -29,8 +25,8 @@ class TranscribedUtterance(Base):
     author: Mapped[str] = mapped_column(String(100), nullable=False)
     utterance: Mapped[str] = mapped_column(String(1000), nullable=False)
     time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
-    minuteman_session_id: Mapped[str] = mapped_column(String(20), nullable=False)
-    
+    minuteman_session_id: Mapped[str] = mapped_column(ForeignKey("minuteman_session.id"), nullable=False)
+
     def __init__(self, session_id, utterance, timestamp, author):
         self.minuteman_session_id = session_id
         self.author = author

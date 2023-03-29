@@ -3,7 +3,7 @@ version: '3.9'
 services:
   web-backend:
     build: ./web_backend
-    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
+    command: source .dev_env && gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777
 

@@ -14,16 +14,13 @@ async function transcribeBlob(blob, startTime, author, callback) {
     // make a POST request to API_URL with the blob in webm as the contents
     let data = new FormData();
     let sessionId = getSessionId();
-    data.append('chunk', blob);
     data.append('author', author);
-    data.append('startTime', startTime);
+    data.append('timestamp', startTime);
+    data.append('chunk', blob);
     let api_url = getTranscriptionApiURL(sessionId);
     const request = new Request(api_url, {
         method: 'POST',
         body: data,
-        headers: new Headers({
-            'Content-Type': 'multipart/form-data'
-        })
     });
     const response = await fetch(request);
     const transcriptData = await response.json();

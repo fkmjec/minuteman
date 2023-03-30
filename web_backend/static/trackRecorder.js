@@ -67,7 +67,7 @@ function getTrackMediaRecorder(track, fileType) {
     start(newUtteranceCallback) {
         this.recorder.start(this.timeslice);
         this.newUtteranceCallback = newUtteranceCallback;
-        this.startTime = new Date();
+        this.startTime = new Date().toISOString();
     }
 
     stop() {

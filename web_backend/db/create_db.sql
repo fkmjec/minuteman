@@ -7,7 +7,7 @@ CREATE TABLE minuteman_session (
 
 -- the first utterances that were recorded from the meeting, without user editing
 CREATE TABLE transcribed_utterance (
-  id integer not null,
+  id serial not null,
   author varchar(100) not null,
   utterance varchar(1000) not null,
   time timestamp not null,

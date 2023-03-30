@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 import sqlalchemy
-from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey, Identity
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -21,17 +21,11 @@ class MinutemanSession(Base):
 
 class TranscribedUtterance(Base):
     __tablename__ = "transcribed_utterance"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Identity(always=True, start=0), primary_key=True, autoincrement=True)
     author: Mapped[str] = mapped_column(String(100), nullable=False)
     utterance: Mapped[str] = mapped_column(String(1000), nullable=False)
     time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
     minuteman_session_id: Mapped[str] = mapped_column(ForeignKey("minuteman_session.id"), nullable=False)
-
-    def __init__(self, session_id, utterance, timestamp, author):
-        self.minuteman_session_id = session_id
-        self.author = author
-        self.utterance = utterance
-        self.time = timestamp
 
 
 class DBInterface:
@@ -54,7 +48,12 @@ class DBInterface:
 
     def store_utterance(self, session_id, utterance, timestamp, author):
         logging.debug(f"Storing utterance {utterance} from session {session_id}")
-        utterance_db_obj = TranscribedUtterance(session_id, utterance, timestamp, author)
+        utterance_db_obj = TranscribedUtterance(
+            minuteman_session_id=session_id,
+            utterance=utterance,
+            time=timestamp,
+            author=author
+        )
         with Session(self.engine) as session:
             with session.begin():
                 try:

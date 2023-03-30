@@ -1,6 +1,7 @@
 import random
 import string
 import datetime
+import dateutil.parser
 
 def get_random_id(length):
     id = ""
@@ -10,3 +11,6 @@ def get_random_id(length):
 
 def get_current_time():
     return datetime.datetime.utcnow()
+
+def datetime_from_iso(iso_str):
+    return dateutil.parser.parse(iso_str)

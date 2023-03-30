@@ -14,3 +14,9 @@ def get_current_time():
 
 def datetime_from_iso(iso_str):
     return dateutil.parser.parse(iso_str)
+
+def concatenate_utterances(utterances):
+    result = ""
+    for utterance in utterances:
+        result = result + f"{utterance[0].author}: {utterance[0].utterance}\n"
+    return result

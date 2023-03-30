@@ -6,7 +6,7 @@ import view_utils
 import text_utils
 import config
 from models import DBInterface
-from flask import Flask, jsonify, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, redirect, url_for, abort
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
 
@@ -26,13 +26,19 @@ app.logger.setLevel("DEBUG")
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
+    print(f"kek {db_interface.session_exists(session_id)}")
+    if not db_interface.session_exists(session_id):
+        abort(404)
     form = TranscriptInputForm()
-
+    past_utterances = db_interface.get_past_utterances(session_id)
+    form.transcript.data = view_utils.concatenate_utterances(past_utterances)
     minutes = []
     splits = []
+    
     if form.validate_on_submit():
         splits = text_utils.split_to_lens(form.transcript.data, app_config.max_input_len, tokenizer)
         minutes = [torch_interface.summarize_block(split) for split in splits]
+    
     return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))
 
 

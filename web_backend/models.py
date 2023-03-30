@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 import sqlalchemy
-from sqlalchemy import String, DateTime, ForeignKey, Identity
+from sqlalchemy import String, DateTime, ForeignKey, Identity, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -63,3 +63,18 @@ class DBInterface:
                     raise
                 else:
                     session.commit()
+    
+    def get_past_utterances(self, session_id):
+        logging.debug(f"Loading minutes for session {session_id} from DB")
+        with Session(self.engine) as session:
+            results = session.execute(select(TranscribedUtterance).where(TranscribedUtterance.minuteman_session_id == session_id).order_by(TranscribedUtterance.time))
+            return results.all()
+    
+    def session_exists(self, session_id):
+        result = None
+        sessions = []
+        with Session(self.engine) as session:
+            result = session.execute(select(MinutemanSession).where(MinutemanSession.id == session_id))
+            sessions = result.all()
+            assert len(sessions) < 2
+        return len(sessions) == 1

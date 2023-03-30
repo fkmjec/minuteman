@@ -29,7 +29,7 @@
     </div>
     <h1>Minuteman</h1>
     <div class="transcript-input">
-        <form method="POST" action="/">
+        <form method="POST" action="{{ request.path }}">
             {{ form.csrf_token }}
             <p>
             {{ form.transcript.label }}

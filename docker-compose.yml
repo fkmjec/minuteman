@@ -36,6 +36,11 @@ services:
       - db:/var/lib/postgres/data
       - ./web_backend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
+  etherpad:
+    image: etherpad/etherpad
+    ports:
+      - 9001:7778
+
 volumes:
   db:
     driver: local

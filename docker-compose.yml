@@ -3,7 +3,12 @@ version: '3.9'
 services:
   web-backend:
     build: ./web_backend
-    command: source .dev_env && gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
+    environment:
+      MOCK_ML_MODELS: "false"
+      TORCH_BACKEND_URL: "torchserve:8084"
+      POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
+      FLASK_SECRET_KEY: ""
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777
 

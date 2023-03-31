@@ -54,7 +54,7 @@ def add_transcript(session_id):
     logging.debug("Received request to transcribe")
     timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
     author = request.form.get("author")
-    chunk = request.form.get("chunk")
+    chunk = request.files.get("chunk")
     transcribed_text = torch_interface.transcribe_chunk(chunk)
     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
     return jsonify({"transcript": transcribed_text})

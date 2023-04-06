@@ -196,10 +196,10 @@ Transcriber.prototype.onRoomSelect = function() {
 
 
 Transcriber.prototype.onNewUtterance = function(utterance) {
-    console.log(utterance);
-    this.transcript.addUtterance(utterance);
-    var transcriptField = document.getElementById('transcript-field');
-    transcriptField.value = this.transcript.toString(); 
+    // # call something sane for debug purposes, but otherwise it is pointless
+    // this.transcript.addUtterance(utterance);
+    // var transcriptField = document.getElementById('transcript-field');
+    // transcriptField.value = this.transcript.toString(); 
 }
 
 

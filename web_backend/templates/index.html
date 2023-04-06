@@ -19,22 +19,20 @@
     // add transcriber to global scope
     window.transcriber = transcriber;
 </script>
-<div>
-    <div class="jitsi">
-        <a href="#" onclick="transcriber.unload()">Disconnect</a>
-        <div id="audioOutputSelectWrapper">
-            <input id="roomSelect" ></input>
-            <input type="button" value="Select room" onclick="transcriber.onRoomSelect()" />
-        </div>
+<div class="jitsi">
+    <a href="#" onclick="transcriber.unload()">Disconnect</a>
+    <div id="audioOutputSelectWrapper">
+        <input id="roomSelect" ></input>
+        <input type="button" value="Select room" onclick="transcriber.onRoomSelect()" />
     </div>
-    <h1>Minuteman</h1>
-    <div class="editors">
-        <div class="transcript-window">
-            <iframe class="transcript-iframe" src="http://localhost:9001/p/{{ session_id }}.trsc"></iframe>
-        </div>
-        <div class="summary-window">
-            <iframe class="summary-iframe" src="http://localhost:9001/p/{{ session_id }}.summ"></iframe>
-        </div>
+</div>
+<h1>Minuteman</h1>
+<div class="editors">
+    <div class="transcript-window">
+        <iframe class="transcript-iframe" src="http://localhost:9001/p/{{ session_id }}.trsc"></iframe>
+    </div>
+    <div class="summary-window">
+        <iframe class="summary-iframe" src="http://localhost:9001/p/{{ session_id }}.summ"></iframe>
     </div>
 </div>
 

@@ -42,4 +42,4 @@ class PadInterface:
     def get_transcript(self, pad_id):
         transcript_pad_id = self._get_trsc_pad_id(pad_id)
         transcript = self.pad.getText(transcript_pad_id)
-        return transcript
+        return transcript["text"]

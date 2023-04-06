@@ -54,7 +54,6 @@ def add_transcript(session_id):
     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
     # we get the transcript here because it could have been edited by users
     transcript = editor_interface.get_transcript(session_id)
-    # summarize here?
     splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
     minutes = [torch_interface.summarize_block(split) for split in splits]
     for minute in minutes:

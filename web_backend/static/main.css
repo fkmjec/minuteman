@@ -1,0 +1,24 @@
+body {
+    height: 100vh;
+}
+
+.editors {
+    width: 100%;
+    /* height:100vh; */
+    height:90vh;
+    overflow:auto;
+}    
+
+.transcript-window {
+    float: left; 
+    width: 50%;
+    background:blue;
+    height: 100%;
+}
+
+.summary-window {
+    float: right;
+    background:pink;
+    height: 100%;
+    width: 50%;
+}

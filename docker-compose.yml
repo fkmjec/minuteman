@@ -8,6 +8,8 @@ services:
       TORCH_BACKEND_URL: "http://torchserve:8084"
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
+      ETHERPAD_API_KEY: "[YOUR_ETHERPAD_KEY]"
+      ETHERPAD_API_URL: "[YOUR_ETHERPAD_URL]"
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777

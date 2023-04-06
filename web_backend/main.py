@@ -2,6 +2,7 @@ import logging
 import os
 
 import api_interface
+import etherpad_interface
 import view_utils
 import text_utils
 import config
@@ -17,6 +18,7 @@ app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 app_config = config.Config()
 torch_interface = api_interface.TorchInterface(app_config)
 db_interface = DBInterface(app_config)
+editor_interface = etherpad_interface.PadInterface(app_config)
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 
 # FIXME: this should be more structured
@@ -46,6 +48,8 @@ def minuting(session_id):
 def index():
     id = view_utils.get_random_id(20)
     db_interface.create_minuteman_session(id, view_utils.get_current_time())
+    editor_interface.create_pad_stack(id)
+    print(id)
     return redirect(url_for('minuting', session_id=id))
 
 

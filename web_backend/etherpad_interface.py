@@ -35,9 +35,9 @@ class PadInterface:
         # so that not everyone can access the recording button
         # TODO: HTML appending so that we can tag summary lines
         # TODO: error handling here
-        transcript_pad_id = self._get_trsc_pad_id(pad_id)
+        summary_pad_id = self._get_summ_pad_id(pad_id)
         trsc_line = "\n" + trsc_line
-        self.pad.appendText(transcript_pad_id, trsc_line)
+        self.pad.appendText(summary_pad_id, trsc_line)
 
     def get_transcript(self, pad_id):
         transcript_pad_id = self._get_trsc_pad_id(pad_id)

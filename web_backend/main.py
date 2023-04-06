@@ -41,7 +41,7 @@ def minuting(session_id):
         splits = text_utils.split_to_lens(form.transcript.data, app_config.max_input_len, tokenizer)
         minutes = [torch_interface.summarize_block(split) for split in splits]
     
-    return render_template("index.html", title="Minuteman", form=form, output=zip(splits, minutes))
+    return render_template("index.html", title="Minuteman", session_id=session_id, form=form, output=zip(splits, minutes))
 
 
 @app.route("/", methods=["GET"])

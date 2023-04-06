@@ -28,20 +28,10 @@ app.logger.setLevel("DEBUG")
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
-    print(f"kek {db_interface.session_exists(session_id)}")
     if not db_interface.session_exists(session_id):
         abort(404)
-    form = TranscriptInputForm()
-    past_utterances = db_interface.get_past_utterances(session_id)
-    form.transcript.data = view_utils.concatenate_utterances(past_utterances)
-    minutes = []
-    splits = []
-    
-    if form.validate_on_submit():
-        splits = text_utils.split_to_lens(form.transcript.data, app_config.max_input_len, tokenizer)
-        minutes = [torch_interface.summarize_block(split) for split in splits]
-    
-    return render_template("index.html", title="Minuteman", session_id=session_id, form=form, output=zip(splits, minutes))
+    # past_utterances = db_interface.get_past_utterances(session_id)
+    return render_template("index.html", title="Minuteman", session_id=session_id)
 
 
 @app.route("/", methods=["GET"])
@@ -61,4 +51,5 @@ def add_transcript(session_id):
     chunk = request.files.get("chunk")
     transcribed_text = torch_interface.transcribe_chunk(chunk)
     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
+    editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
     return jsonify({"transcript": transcribed_text})

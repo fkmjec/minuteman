@@ -38,3 +38,8 @@ class PadInterface:
         transcript_pad_id = self._get_trsc_pad_id(pad_id)
         trsc_line = "\n" + trsc_line
         self.pad.appendText(transcript_pad_id, trsc_line)
+
+    def get_transcript(self, pad_id):
+        transcript_pad_id = self._get_trsc_pad_id(pad_id)
+        transcript = self.pad.getText(transcript_pad_id)
+        return transcript

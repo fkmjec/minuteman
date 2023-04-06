@@ -9,7 +9,7 @@ services:
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
       ETHERPAD_API_KEY: "[YOUR_ETHERPAD_KEY]"
-      ETHERPAD_API_URL: "[YOUR_ETHERPAD_URL]"
+      ETHERPAD_API_URL: "http://etherpad:9001/api"
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777
@@ -39,9 +39,9 @@ services:
       - ./web_backend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
   etherpad:
-    image: etherpad/etherpad
+    build: ./etherpad-lite
     ports:
-      - 9001:7778
+      - 9001:9001
 
 volumes:
   db:

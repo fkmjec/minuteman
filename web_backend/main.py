@@ -51,11 +51,14 @@ def add_transcript(session_id):
     chunk = request.files.get("chunk")
     transcribed_text = torch_interface.transcribe_chunk(chunk)
     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
+
     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
     # we get the transcript here because it could have been edited by users
     transcript = editor_interface.get_transcript(session_id)
     splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
     minutes = [torch_interface.summarize_block(split) for split in splits]
+    i = 0
     for minute in minutes:
-        editor_interface.add_summ_line(session_id, minute)
+        line_id = session_id + "-" + str(i)
+        editor_interface.add_summ_line(session_id, minute, line_id)
     return jsonify({"transcript": transcribed_text})

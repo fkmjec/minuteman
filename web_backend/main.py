@@ -26,6 +26,24 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel("DEBUG")
 
+def update_minutes(session_id, transcript, past_minutes):
+    splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
+    minutes = [torch_interface.summarize_block(split) for split in splits]
+    i = 0
+    for minute in minutes:
+        line_id = session_id + "-" + str(i)
+        # FIXME: this is going to be slow
+        already_generated = False
+        for past_minute in past_minutes:
+            m_id = past_minute[0]
+            if m_id == line_id:
+                already_generated = True
+        if already_generated:
+            editor_interface.update_summ_line(session_id, minute, line_id)
+        else:
+            editor_interface.add_summ_line(session_id, minute, line_id)
+
+
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
     if not db_interface.session_exists(session_id):
@@ -54,11 +72,25 @@ def add_transcript(session_id):
 
     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
     # we get the transcript here because it could have been edited by users
-    transcript = editor_interface.get_transcript(session_id)
-    splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
-    minutes = [torch_interface.summarize_block(split) for split in splits]
-    i = 0
-    for minute in minutes:
-        line_id = session_id + "-" + str(i)
-        editor_interface.add_summ_line(session_id, minute, line_id)
     return jsonify({"transcript": transcribed_text})
+
+
+# API endpoint for notification from the pad that either a summary or a transcript was edited by the user
+# called from the ep_minuteman plugin
+@app.route("/pad_change/<pad_id>", methods=["POST"])
+def pad_change(pad_id):
+    # check that the pad is of the transcript kind
+    try:
+        session_id, session_type = editor_interface.session_id_from_pad(pad_id)
+        # TODO: use an enum here
+        if db_interface.session_exists(session_id) and session_type == "trsc":
+            # TODO: throttle requests.
+            # we only need to react to transcript changes as reacting to summary changes would lead to infinite loops
+            transcript = editor_interface.get_transcript(session_id)
+            past_minutes = editor_interface.get_minutes(session_id)
+            update_minutes(session_id, transcript, past_minutes)
+            # return ok response
+            return jsonify({"status_code": 200, "message": "ok"})
+    except ValueError as va:
+        logging.debug("Got valueChange from another editor! People seem to be using it liberally!")
+        return jsonify({"status_code": 200, "message": "ok"})

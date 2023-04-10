@@ -1,0 +1,16 @@
+{
+    "parts": [
+        {
+            "name": "ep_minuteman",
+            "hooks": {
+                "padCreate": "ep_minuteman/index",
+                "collectContentPre": "ep_minuteman/index",
+                "expressCreateServer": "ep_minuteman/index",
+                "padUpdate": "ep_minuteman/index",
+                "getLineHTMLForExport": "ep_minuteman/index"
+            },
+            "client_hooks": {
+            }
+        }
+    ]
+}

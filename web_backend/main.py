@@ -39,6 +39,7 @@ def update_minutes(session_id, transcript, past_minutes):
             if m_id == line_id:
                 already_generated = True
         if already_generated:
+            print("update")
             editor_interface.update_summ_line(session_id, minute, line_id)
         else:
             editor_interface.add_summ_line(session_id, minute, line_id)
@@ -90,6 +91,8 @@ def pad_change(pad_id):
             past_minutes = editor_interface.get_minutes(session_id)
             update_minutes(session_id, transcript, past_minutes)
             # return ok response
+            return jsonify({"status_code": 200, "message": "ok"})
+        else:
             return jsonify({"status_code": 200, "message": "ok"})
     except ValueError as va:
         logging.debug("Got valueChange from another editor! People seem to be using it liberally!")

@@ -47,8 +47,8 @@ services:
       DEFAULT_PAD_TEXT: "Welcome to Minuteman!"
       ADMIN_PASSWORD: [ETHERPAD_ADMIN_PASSWORD]
       ADMIN_USER: admin
-      DB_TYPE: postgresql
-      DB_HOST: mariadb
+      DB_TYPE: postgres
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASS: postgres

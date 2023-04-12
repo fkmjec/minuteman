@@ -1,6 +1,6 @@
 import re
 
-SEPARATORS = "\."
+SEPARATORS = "[\.!?]"
 
 def split_to_lens(input_str, max_len, tokenizer):
     splits = re.split(SEPARATORS, input_str)
@@ -18,5 +18,4 @@ def split_to_lens(input_str, max_len, tokenizer):
             output.append("")
             output[j] += sentence
             current_output_len = len(tokenized_sentence)
-
     return output

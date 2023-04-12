@@ -48,7 +48,6 @@ class PadInterface:
         # TODO: HTML appending so that we can tag summary lines
         # TODO: error handling here
         summary_pad_id = self._get_summ_pad_id(pad_id)
-        summ_line = "\n" + summ_line
         # TODO: pyetherpadlite does not support our API extensions yet with the ep_minuteman plugin
         # therefore, we have to make the requests ourselves
         url = self.config.etherpad_api_url + "/appendSumm"
@@ -64,7 +63,6 @@ class PadInterface:
     
     def update_summ_line(self, pad_id, summ_line, summ_line_id):
         summary_pad_id = self._get_summ_pad_id(pad_id)
-        summ_line = "\n" + summ_line
         # TODO: pyetherpadlite does not support our API extensions yet with the ep_minuteman plugin
         # therefore, we have to make the requests ourselves
         url = self.config.etherpad_api_url + "/updateSumm"

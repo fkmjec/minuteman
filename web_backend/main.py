@@ -39,10 +39,10 @@ def update_minutes(session_id, transcript, past_minutes):
             if m_id == line_id:
                 already_generated = True
         if already_generated:
-            print("update")
             editor_interface.update_summ_line(session_id, minute, line_id)
         else:
             editor_interface.add_summ_line(session_id, minute, line_id)
+        i += 1
 
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])

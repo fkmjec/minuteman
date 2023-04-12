@@ -24,20 +24,19 @@ function getSummaryLineChangeChs(pad, newText, summaryId, pool) {
     var opIter = Changeset.opIterator(pad.atext.attribs);
     // FIXME: is this needed?
     let oldText = Pad.cleanText(pad.text());
-    let text = Pad.cleanText(newText + "\n");
+    const text = Pad.cleanText(newText);
     let charsBefore = 0;
 
     while (opIter.hasNext()) {
         // we can use the opIterator to get attributes for each line, but can we get where the revision starts and ends?
         // get line contents for iterator
         var op = opIter.next();
-        logger.info(op.chars);
-        logger.info(op.lines);
-        logger.info(op);
         header = Changeset.opAttributeValue(op, 'summary', pad.pool);
         if (header === summaryId) {
             let attribs = [[ "summary", summaryId]];
+            // logger.info(f`chars before: ${op.charsBefore} chars for point${logger.chars}`);
             let changeset = Changeset.makeSplice(oldText, charsBefore, op.chars, text, attribs, pad.pool);
+            changeset.app
             return changeset;
         } else {
             charsBefore += op.chars;
@@ -92,13 +91,11 @@ exports.expressCreateServer = function(hook, args, cb) {
         logger.info(padIdReceived);
         logger.info(data);
         const pad = await padManager.getPad(padIdReceived);
-
-        const oldText = Pad.cleanText(pad.text());
-        const newText = Pad.cleanText(data.text);
-
+        
         // create the changeset together with the summary attribute (beware, pool must be passed too)
-        const changeset = getSummaryLineAppendChs(pad, newText, data.id);
-        logger.info(changeset);
+        // append a newline as this cannot be done in the changeset
+        await pad.appendText("\n");
+        const changeset = getSummaryLineAppendChs(pad, data.text, data.id);
         await pad.appendRevision(changeset);
 
         logger.info(pad);
@@ -178,9 +175,9 @@ exports.getLineHTMLForExport = function (hook, context) {
     logger.info(header);
     if (header) {
         context.lineContent = "<span class=\"summary " + header + "\">" + context.lineContent + "</span>";
-    } else {
+    } /* else {
         context.lineContent = "<span class=\"summary user\">" + context.lineContent + "</span>";
-    }
+    } */
     return context.lineContent;
   }
   

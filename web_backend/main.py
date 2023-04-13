@@ -10,12 +10,16 @@ from models import DBInterface
 from flask import Flask, jsonify, render_template, request, redirect, url_for, abort
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
+from extensions import db
 
 app = Flask(__name__)
+# load config from env variables
+app_config = config.Config()
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+app.config['SQLALCHEMY_DATABASE_URI'] = app_config.db_url
+db.init_app(app)
 
 # initialize global interfaces with config from env vars
-app_config = config.Config()
 torch_interface = api_interface.TorchInterface(app_config)
 db_interface = DBInterface(app_config)
 editor_interface = etherpad_interface.PadInterface(app_config)

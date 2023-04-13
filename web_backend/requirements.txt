@@ -6,6 +6,7 @@ cmake==3.25.2
 ffmpeg-python==0.2.0
 filelock==3.9.0
 Flask==2.2.3
+Flask-SQLAlchemy==3.0.3
 Flask-WTF==1.1.1
 future==0.18.3
 greenlet==2.0.2

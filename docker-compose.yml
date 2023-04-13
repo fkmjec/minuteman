@@ -4,29 +4,29 @@ services:
   web-backend:
     build: ./web_backend
     environment:
-      MOCK_ML_MODELS: "false"
+      MOCK_ML_MODELS: "true"
       TORCH_BACKEND_URL: "http://torchserve:8084"
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
-      ETHERPAD_API_KEY: "[YOUR_ETHERPAD_API_KEY]"
+      ETHERPAD_API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
       ETHERPAD_API_URL: "http://etherpad:9001/api"
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777
     ports:
       - 7777:7777
 
-  torchserve:
-    build: ./torchserve_whisper
-    command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
-    volumes:
-     - ./torch_model_dir:/torch_model_dir
-     - ./torch-config.cnf:/torch-config.cnf
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  # torchserve:
+  #   build: ./torchserve_whisper
+  #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
+  #   volumes:
+  #    - ./torch_model_dir:/torch_model_dir
+  #    - ./torch-config.cnf:/torch-config.cnf
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
 
   postgres:
     image: 'postgres'
@@ -45,7 +45,7 @@ services:
     environment:
       TITLE: Minuteman
       DEFAULT_PAD_TEXT: "Welcome to Minuteman!"
-      ADMIN_PASSWORD: [ETHERPAD_ADMIN_PASSWORD]
+      ADMIN_PASSWORD: ETHERPAD_ADMIN_PASSWORD
       ADMIN_USER: admin
       DB_TYPE: postgres
       DB_HOST: postgres
@@ -54,7 +54,10 @@ services:
       DB_PASS: postgres
       DB_NAME: postgres
       DB_CHARSET: utf8mb4
-      API_KEY: [YOUR_API_KEY]
+      API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
+      MINUTEMAN_API_URL: "http://web-backend:7777/"
+    depends_on:
+      - postgres
 
 volumes:
   db:

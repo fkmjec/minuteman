@@ -17,7 +17,7 @@ class MinutemanSession(db.Model):
 
 
 class TranscribedUtterance(db.Model):
-    id: Mapped[int] = mapped_column(Identity(always=True, start=0), primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Identity(always=True, start=1), primary_key=True, autoincrement=True)
     author: Mapped[str] = mapped_column(String(100), nullable=False)
     utterance: Mapped[str] = mapped_column(String(1000), nullable=False)
     time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -25,7 +25,7 @@ class TranscribedUtterance(db.Model):
 
 
 class GeneratedSummary(db.Model):
-    id: Mapped[int] = mapped_column(Identity(always=True, start=0), primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Identity(always=True, start=1), primary_key=True, autoincrement=True)
     minuteman_session_id: Mapped[str] = mapped_column(ForeignKey("minuteman_session.id"), nullable=False)
 
     time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)

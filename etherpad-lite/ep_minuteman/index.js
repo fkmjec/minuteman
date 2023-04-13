@@ -158,14 +158,16 @@ exports.expressCreateServer = function(hook, args, cb) {
 exports.padUpdate = function(hook, context, cb) {
     // TODO: give info to the minuteman Python API that it should update the summary if the pad is a transcript pad.
     // TODO: how to distinguish summary and transcript pads?
-    logger.info(process.env.MINUTEMAN_API_URL);
     // make a POST request to the minuteman API at process.env.MINUTEMAN_API_URL
     // with the pad id
     let apiUrl = process.env.MINUTEMAN_API_URL + "pad_change/" + context.pad.id;
-    logger.info(apiUrl);
-    fetch(apiUrl, {
-        method: "POST",
-    })
+    logger.info(`author: ${context.author}`);
+    // only call api if it was a human user who edited the document
+    if (author) {
+        fetch(apiUrl, {
+            method: "POST",
+        })
+    }
     logger.info("padUpdate called!");
     cb(undefined);
 }

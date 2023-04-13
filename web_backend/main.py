@@ -76,6 +76,9 @@ def add_transcript(session_id):
     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
 
     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
+    transcript = editor_interface.get_transcript(session_id)
+    past_minutes = editor_interface.get_minutes(session_id)
+    update_minutes(session_id, transcript, past_minutes)
     # we get the transcript here because it could have been edited by users
     return jsonify({"transcript": transcribed_text})
 

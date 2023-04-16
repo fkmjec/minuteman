@@ -10,7 +10,7 @@ function getTranscriptionApiURL(sessionId) {
     return window.location.origin + "/transcribe/" + sessionId
 }
 
-async function transcribeBlob(blob, startTime, author, callback) {
+async function transcribeBlob(blob, startTime, author) {
     // make a POST request to API_URL with the blob in webm as the contents
     let data = new FormData();
     let sessionId = getSessionId();
@@ -24,7 +24,6 @@ async function transcribeBlob(blob, startTime, author, callback) {
     });
     const response = await fetch(request);
     const transcriptData = await response.json();
-    callback(transcriptData, author, startTime);
 }
 
 export default transcribeBlob;

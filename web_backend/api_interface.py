@@ -1,6 +1,7 @@
 import logging
 import requests
 import urllib.parse
+import transcript
 
 SUMM_MODEL_NAME = "bart"
 TRANSCRIBE_MODEL_NAME = "whisper"
@@ -18,7 +19,10 @@ class TorchInterface:
         return files
 
     def summarize_block(self, input_string):
-        files = self._prepare_request_data_files(input_string)
+        trsc = transcript.Transcript.from_automin(input_string)
+        trsc.kartik_clean()
+        trsc = trsc.raw_str()
+        files = self._prepare_request_data_files(trsc)
         summ_addr = self._construct_model_address(SUMM_MODEL_NAME)
         if self.config.mock_ml_models:
             logging.debug(f"Summarization req to {summ_addr} mocked!")

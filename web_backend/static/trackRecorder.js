@@ -103,16 +103,22 @@ function getTrackMediaRecorder(track, fileType) {
     sendActiveData() {
         // merge the data chunks into a single blob
         this.recorder.ondataavailable = null;
+        this.stop();
         const blob = new Blob(this.data, { type: 'audio/webm' });
         transcribeBlob(blob, this.startTime, this.name);
-        this.getNewRecorder(this.track);
+        let mediaRecorder = this;
+        this.recorder.ondataavailable = function(dataEvent) {
+            if (dataEvent.data.size > 0) {
+                mediaRecorder.handleData(dataEvent);
+            }
+        }
         this.data = [];
         this.start(this.newUtteranceCallback);
     }
 
     getNewRecorder(track) {
         this.recorder = getTrackMediaRecorder(track, this.fileType);
-        // FIXME: how to ditch the bind?        
+        // FIXME: how to ditch the bind?
         let mediaRecorder = this;
         this.recorder.ondataavailable = function(dataEvent) {
             if (dataEvent.data.size > 0) {
@@ -136,8 +142,15 @@ function getTrackMediaRecorder(track, fileType) {
                 this.sendActiveData();
             } else {
                 this.recorder.ondataavailable = null;
+                // stop without triggering this handleData
+                this.stop();
                 this.data = [];
-                this.getNewRecorder(this.track);
+                let mediaRecorder = this;
+                this.recorder.ondataavailable = function(dataEvent) {
+                    if (dataEvent.data.size > 0) {
+                        mediaRecorder.handleData(dataEvent);
+                    }
+                }
                 this.start(this.newUtteranceCallback);                    
             }
             this.speaking = false;

@@ -132,18 +132,23 @@ function getTrackMediaRecorder(track, fileType) {
         const chunk = event.data;
         // FIXME: the data sent and the data given are not bound at all
         const isActive = await this.isActive();
-        if (!isActive && this.speaking) {
+        if (!isActive) {
+            if (this.speaking) {
             // utterance is complete, pack it and send it
-            this.sendActiveData();
-        } else if (isActive && this.speaking) {
+                this.sendActiveData();
+            } else {
+                this.recorder.ondataavailable = null;
+                this.data = [];
+                this.getNewRecorder(this.track);
+                this.start(this.newUtteranceCallback);                    
+            }
+            this.speaking = false;
+        } else if (isActive) {
             this.data.push(chunk);
             if (this.data.length * this.timeslice > this.maxUtteranceLen) {
                 this.sendActiveData();
             }
-        } else if (!isActive) {
-            // FIXME: I am feeding the garbage collector so much here, I need to redesign this.
-            this.getNewRecorder(this.track);
-            this.start(this.newUtteranceCallback);
+            this.speaking = true;
         }
     }
 }

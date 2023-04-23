@@ -52,6 +52,7 @@ function getTrackMediaRecorder(track, fileType) {
 
         // the time of the start of the recording
         this.startTime = null;
+        this.speaking = false;
         this.timeslice = timeslice;
         this.newUtteranceCallback = null;
         // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
@@ -131,14 +132,18 @@ function getTrackMediaRecorder(track, fileType) {
         const chunk = event.data;
         // FIXME: the data sent and the data given are not bound at all
         const isActive = await this.isActive();
-        if (!isActive && this.data.length > 0) {
+        if (!isActive && this.speaking) {
             // utterance is complete, pack it and send it
             this.sendActiveData();
-        } else if (isActive) {
+        } else if (isActive && this.speaking) {
             this.data.push(chunk);
             if (this.data.length * this.timeslice > this.maxUtteranceLen) {
                 this.sendActiveData();
             }
+        } else if (!isActive) {
+            // FIXME: I am feeding the garbage collector so much here, I need to redesign this.
+            this.getNewRecorder(this.track);
+            this.start(this.newUtteranceCallback);
         }
     }
 }

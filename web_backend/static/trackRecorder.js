@@ -1,6 +1,9 @@
 import transcribeBlob from "./apiInterface.js";
 import { Utterance } from "./transcriptUtils.js";
 
+// FIXME: this should somehow be better 
+const SAMPLE_RATE = 44100;
+
 function getTrackMediaRecorder(track, fileType) {
     // Create a new stream which only holds the audio track
     const originalStream = track.getOriginalStream();
@@ -53,15 +56,33 @@ function getTrackMediaRecorder(track, fileType) {
         this.newUtteranceCallback = null;
         // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
         this.maxUtteranceLen = maxUtteranceLen;
+        this.audioContext = new AudioContext();
+        this.analyserNode = this.audioContext.createAnalyser();
+        
+        this.audioStreamSource = this.audioContext.createMediaStreamSource(this.recorder.stream);
+        this.audioStreamSource.connect(this.analyserNode);
+        // this needs to be done after connecting the mediaStreamSource, otherwise it will
+        // not adjust to the sample rate of the stream
+        this.analyserNode.fftSize = 32768;
+        this.analyserBuffer = new Float32Array(this.analyserNode.fftSize);
     }
 
     /**
      * Estimates whether the chunk contains someone speaking
      * @param chunk - the blob with the audio
      */
-    isActive(chunk) {
-        // TODO
-        return true;
+    async isActive(chunk) {
+        this.analyserNode.getFloatTimeDomainData(this.analyserBuffer);        
+        let hasSpeech = false;
+        if (!this.VAD) {
+            this.VAD = await vad.NonRealTimeVAD.new({});
+        }
+        console.info(await this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate));
+        for await (const {audio, start, end} of this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate)) {
+            hasSpeech = true;
+        }
+        console.info(hasSpeech);
+        return hasSpeech;
     }
 
     start(newUtteranceCallback) {
@@ -105,13 +126,15 @@ function getTrackMediaRecorder(track, fileType) {
      * Handles an incoming data chunk from the MediaRecorder
      * @param event the event containing the data chunk
      */
-    handleData(event) {
+    async handleData(event) {
         // TODO check there is a large enough volume in the 1s chunk
         const chunk = event.data;
-        if (!this.isActive(chunk)) {
+        // FIXME: the data sent and the data given are not bound at all
+        const isActive = await this.isActive();
+        if (!isActive && this.data.length > 0) {
             // utterance is complete, pack it and send it
             this.sendActiveData();
-        } else {
+        } else if (isActive) {
             this.data.push(chunk);
             if (this.data.length * this.timeslice > this.maxUtteranceLen) {
                 this.sendActiveData();

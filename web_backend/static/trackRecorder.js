@@ -78,11 +78,9 @@ function getTrackMediaRecorder(track, fileType) {
         if (!this.VAD) {
             this.VAD = await vad.NonRealTimeVAD.new({});
         }
-        console.info(await this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate));
         for await (const {audio, start, end} of this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate)) {
             hasSpeech = true;
         }
-        console.info(hasSpeech);
         return hasSpeech;
     }
 

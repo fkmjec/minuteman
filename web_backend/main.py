@@ -28,13 +28,16 @@ tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 # FIXME: this should be more structured
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel("DEBUG")
+app.logger.setLevel("INFO")
 
 def update_minutes(session_id, transcript, past_minutes):
     splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
     minutes = [torch_interface.summarize_block(split) for split in splits]
     i = 0
-    for minute in minutes:
+    chars_before = 0
+    for minute, split in zip(minutes[0:-1], splits[0:-1]):
+        # app.logger.info(split)
+        split_len = len(split)
         line_id = session_id + "-" + str(i)
         # FIXME: this is going to be slow
         already_generated = False
@@ -45,8 +48,12 @@ def update_minutes(session_id, transcript, past_minutes):
         if already_generated:
             editor_interface.update_summ_line(session_id, minute, line_id)
         else:
-            editor_interface.add_summ_line(session_id, minute, line_id)
+            app.logger.info(split)
+            app.logger.info(chars_before)
+            app.logger.info(chars_before + split_len + 1)
+            editor_interface.add_summ_line(session_id, minute, line_id, chars_before, chars_before + split_len + 1)
         i += 1
+        chars_before += split_len + 1
 
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
@@ -74,7 +81,6 @@ def add_transcript(session_id):
     chunk = request.files.get("chunk")
     transcribed_text = torch_interface.transcribe_chunk(chunk)
     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
-
     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
     transcript = editor_interface.get_transcript(session_id)
     past_minutes = editor_interface.get_minutes(session_id)

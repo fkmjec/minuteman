@@ -9,6 +9,9 @@ const fetch = require('node-fetch');
 const apiUtils = require('./apiUtils');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite'); 
 
+const SEPARATOR_LINE_STR = "-----TRANSCRIPT SEPARATOR-----";
+  
+
 // generate a changeset for a summary line. This includes saving the proper
 // attributes. We presume the text has been cleaned before.
 function getSummaryLineAppendChs(pad, newText, summaryId) {
@@ -45,23 +48,25 @@ function getSummaryLineChangeChs(pad, newText, summaryId, pool) {
     throw new Error("Summary point not found!");
 }
 
+function getTrscSeparatorChs(pad, charNum, trscId, pool) {
+    let oldText = Pad.cleanText(pad.text());
+    // FIXME: can this handle the newline?
+    // TODO: add correspondence with the summary point id
+    let text = "\n" + SEPARATOR_LINE_STR + "\n";
+    const changeset = Changeset.makeSplice(oldText, charNum, 0, text);
+    return changeset;
+}
+
 exports.padCreate = function(hook, context, cb){
     const apool = new AttributePool();
     const builder = Changeset.builder(1, apool);
-    builder.insert('Hello World!');
-    const changeset = builder.toString();
-    logger.info("made changes, yaay");
-    context.pad.setText("This works, thanks!");
+    context.pad.setText("");
     cb(undefined);
 }
 
 exports.collectContentPre = function(hook, context, cb){
-    logger.info("Collect content pre called!");
-    logger.info(context);
-    logger.info(context.cls);
     const summary = /(?:^| )(s-[A-Za-z0-9]*)/.exec(context.cls);
     if (summary) {
-        logger.info(summary);
         context.cc.doAttrib(context.state, `summary::${summary[1]}`);
     }
     cb();
@@ -79,6 +84,7 @@ exports.expressCreateServer = function(hook, args, cb) {
         if (!apiUtils.validateApiKey(fields, res)) return;
         // sanitize pad id before continuing
         const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
+        const trscPadId = padIdReceived.slice(0, -4) + "trsc";
         let data;
         try {
             logger.info(fields);
@@ -88,37 +94,44 @@ exports.expressCreateServer = function(hook, args, cb) {
             res.json({ code:1 , message: "data must be in JSON format"});
             return;
         }
-        logger.info(padIdReceived);
-        logger.info(data);
         const pad = await padManager.getPad(padIdReceived);
+        const trscPad = await padManager.getPad(trscPadId);
         
         // create the changeset together with the summary attribute (beware, pool must be passed too)
         // append a newline as this cannot be done in the changeset
+        logger.info(data);
         await pad.appendText("\n");
         const changeset = getSummaryLineAppendChs(pad, data.text, data.id);
         await pad.appendRevision(changeset);
 
+        // FIXME: make this one revision
+        const trscChangesetPre = getTrscSeparatorChs(trscPad, data.preTrsc, data.id);
+        const addedLen = SEPARATOR_LINE_STR.length + 2;
+        await trscPad.appendRevision(trscChangesetPre);
+        const trscChangesetPost = getTrscSeparatorChs(trscPad, data.postTrsc + addedLen, data.id);
+        await trscPad.appendRevision(trscChangesetPost);
         logger.info(pad);
         padMessageHandler.updatePadClients(pad);
+        padMessageHandler.updatePadClients(trscPad);
         res.json({ code: 0, message: "Success!"});
     });
 
-    args.app.get("/api/getSummPoints", async (req, res) => {
-        const fields = req.query;
+    // args.app.get("/api/getSummPoints", async (req, res) => {
+    //     const fields = req.query;
 
-        logger.info(fields);
+    //     logger.info(fields);
 
-        if (!apiUtils.validateApiKey(fields, res)) return;
-        // sanitize pad id before continuing
-        // TODO: get padId from fields
-        const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
-        logger.info(padIdReceived);
-        const pad = await padManager.getPad(padIdReceived);
-        // TODO: go through all lines and get the ones where summary attributes are set
+    //     if (!apiUtils.validateApiKey(fields, res)) return;
+    //     // sanitize pad id before continuing
+    //     // TODO: get padId from fields
+    //     const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
+    //     logger.info(padIdReceived);
+    //     const pad = await padManager.getPad(padIdReceived);
+    //     // TODO: go through all lines and get the ones where summary attributes are set
         
 
-        res.json({ code: 0, message: "TODO!"});
-    });
+    //     res.json({ code: 0, message: "TODO!"});
+    // });
 
     args.app.post("/api/updateSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {

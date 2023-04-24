@@ -42,7 +42,7 @@ class PadInterface:
         trsc_line = "\n" + trsc_line
         self.pad.appendText(transcript_pad_id, trsc_line)
 
-    def add_summ_line(self, pad_id, summ_line, summ_line_id):
+    def add_summ_line(self, pad_id, summ_line, summ_line_id, trsc_start, trsc_end):
         # FIXME: how will this api work? It would be logical to keep the session id private
         # so that not everyone can access the recording button
         # TODO: HTML appending so that we can tag summary lines
@@ -52,7 +52,16 @@ class PadInterface:
         # therefore, we have to make the requests ourselves
         url = self.config.etherpad_api_url + "/appendSumm"
         params = {}
-        data = {"padID": summary_pad_id, "apikey": self.config.etherpad_api_key, "data": json.dumps({"id": summ_line_id, "text": summ_line})}
+        data = {
+            "padID": summary_pad_id,
+            "apikey": self.config.etherpad_api_key,
+            "data": json.dumps({
+                "id": summ_line_id,
+                "text": summ_line,
+                "preTrsc": trsc_start,
+                "postTrsc": trsc_end
+            }
+        )}
 
         response = requests.post(url, params=params, data=data)
         if response.status_code == 200 and response.json()["code"] == 0:

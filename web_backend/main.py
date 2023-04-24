@@ -31,7 +31,8 @@ app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel("INFO")
 
 def update_minutes(session_id, transcript, past_minutes):
-    splits = text_utils.split_to_lens(transcript, app_config.max_input_len, tokenizer)
+    splits = text_utils.split_by_trsc_separator(transcript)
+    last_split = splits[-1]
     minutes = [torch_interface.summarize_block(split) for split in splits]
     i = 0
     chars_before = 0
@@ -48,12 +49,16 @@ def update_minutes(session_id, transcript, past_minutes):
         if already_generated:
             editor_interface.update_summ_line(session_id, minute, line_id)
         else:
-            app.logger.info(split)
-            app.logger.info(chars_before)
-            app.logger.info(chars_before + split_len + 1)
             editor_interface.add_summ_line(session_id, minute, line_id, chars_before, chars_before + split_len + 1)
         i += 1
         chars_before += split_len + 1
+    
+    # append new line if it has one full segment
+    last_splits = text_utils.split_to_lens(last_split, app_config.max_input_len, tokenizer)
+    if len(last_splits) > 1:
+        last_minute = torch_interface.summarize_block(last_splits[0])
+        last_line_id = session_id + "-" + str(i)
+        editor_interface.add_summ_line(session_id, last_minute, last_line_id, chars_before, chars_before + len(last_splits[0]) + 1)
 
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])

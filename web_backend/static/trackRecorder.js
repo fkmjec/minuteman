@@ -42,17 +42,22 @@ function getTrackMediaRecorder(track, fileType) {
         this.audioContext = new AudioContext();
 
         const originalStream = track.getOriginalStream();
-        const stream = new MediaStream();
-        originalStream.getAudioTracks().forEach(t => stream.addTrack(t));
-    
         
-        this.audioStreamSource = this.audioContext.createMediaStreamSource(stream);
-        // audioContext.resume();
-        this.audioContext.audioWorklet.addModule("/static/VoiceRecorder.js").then(() => {
+        // merge the (usually stereo) audio tracks into one
+        this.mergedTracksDestination = new MediaStreamAudioDestinationNode(this.audioContext, { channelCount: 1 });
+        this.inNodes = [];
+        originalStream.getAudioTracks().forEach(t => {
+            let inNode = this.audioContext.createMediaStreamTrackSource(t);
+            this.inNodes.push(inNode);
+            inNode.connect(this.mergedTracksDestination);
+        });
+        this.mergedStreamSource = this.audioContext.createMediaStreamSource(this.mergedTracksDestination.stream);
+        
+        this.audioContext.audioWorklet.addModule("/static/VoiceRecorder.js").then(() => {            
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder");
-            this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder");
-            this.audioStreamSource.connect(this.voiceRecorder);
+            this.mergedStreamSource.connect(this.voiceRecorder);
         }).catch((e) => console.error(e));
+        console.info(this.audioContext.sampleRate);
         // this.analyserNode = this.audioContext.createAnalyser();
         // this.audioContext.audioWorklet.addModule("./VoiceRecorder.js");
 

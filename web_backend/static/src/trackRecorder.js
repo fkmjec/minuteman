@@ -43,8 +43,8 @@ const VOICE_CHECKING_LEN = 1;
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
-                    voiceCheckingLen: VOICE_CHECKING_LEN,
-                    maxSavedLen: this.maxUtteranceLen
+                    targetSampleRate: 16000, // TODO constant
+                    sentChunkLen: 0.1,
                 }
             });
             this.voiceRecorder.port.onmessage = (e) => console.log(e.data);
@@ -53,21 +53,6 @@ const VOICE_CHECKING_LEN = 1;
         console.info(this.audioContext.sampleRate);
     }
 
-    /**
-     * Estimates whether the chunk contains someone speaking
-     * @param chunk - the blob with the audio
-     */
-    async isActive(chunk) {
-        this.analyserNode.getFloatTimeDomainData(this.analyserBuffer);
-        let hasSpeech = false;
-        if (!this.VAD) {
-            this.VAD = await NonRealTimeVAD.new({});
-        }
-        for await (const {audio, start, end} of this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate)) {
-            hasSpeech = true;
-        }
-        return hasSpeech;
-    }
 
     start() {
         // this.recorder.start(this.timeslice);
@@ -80,7 +65,7 @@ const VOICE_CHECKING_LEN = 1;
     }
 
     encodeData(floatBuffer) {
-        // TODO use lamejs
+        // TODO use lamejs?
     }
 
     sendActiveData() {

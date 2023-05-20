@@ -28,7 +28,6 @@ tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 # FIXME: this should be more structured
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel("INFO")
 
 def update_minutes(session_id, transcript, past_minutes):
     splits = text_utils.split_by_trsc_separator(transcript)

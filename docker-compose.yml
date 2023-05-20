@@ -10,7 +10,7 @@ services:
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
       ETHERPAD_API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
       ETHERPAD_API_URL: "http://etherpad:9001/api"
-    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 60
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
     ports:
       - 7777:7777
 

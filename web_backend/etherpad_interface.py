@@ -89,6 +89,9 @@ class PadInterface:
         transcript = self.pad.getText(transcript_pad_id)
         return transcript["text"]
     
+    def get_transcript_segments(self, pad_id):
+        transcript = self.get_transcript(pad_id)
+
     def get_minutes(self, pad_id):
         # TODO maybe rework this together with a better api in ep_minuteman
         summary_pad_id = self._get_summ_pad_id(pad_id)

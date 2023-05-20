@@ -2,23 +2,7 @@
 {% extends 'base.html' %}
 
 {% block main %}
-<script type="module">
-    import Transcriber from "{{ url_for('static', filename='transcriber.js') }}";
-    // JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
-    // TODO move to a separate file
-    const initOptions = {
-        disableAudioLevels: true
-    }; 
-    let transcriber = new Transcriber();
-
-
-    transcriber.initJitsi(initOptions);
-
-    $(window).bind('beforeunload', transcriber.unload.bind(transcriber));
-    $(window).bind('unload', transcriber.unload.bind(transcriber));
-    // add transcriber to global scope
-    window.transcriber = transcriber;
-</script>
+<script src="{{ url_for('static', filename='dist/main.js') }}"></script>
 <div class="jitsi">
     <a href="#" onclick="transcriber.unload()">Disconnect</a>
     <div id="audioOutputSelectWrapper">

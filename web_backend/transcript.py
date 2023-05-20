@@ -90,10 +90,11 @@ class Transcript:
             match = utterance_start.match(line)
             if utterance_start.match(line) is not None:
                 # start of new utterance
-                roles.append(current_role)
-                utterances.append(current_utterance)
+                if current_utterance != "" and current_role != "":
+                    roles.append(current_role)
+                    utterances.append(current_utterance)
                 current_role = match.group(1)
-                current_utterance = ""
+                current_utterance = match.group(2)
             elif line.isspace():
                 # let's not append empty lines into our utterances
                 continue

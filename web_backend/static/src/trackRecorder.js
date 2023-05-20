@@ -1,22 +1,9 @@
 import transcribeBlob from "./apiInterface.js";
 import { Utterance } from "./transcriptUtils.js";
+import { NonRealTimeVAD } from "@ricky0123/vad-web"
 
-// FIXME: this should somehow be better 
-const SAMPLE_RATE = 44100;
-
-function getTrackMediaRecorder(track, fileType) {
-    // Create a new stream which only holds the audio track
-    const originalStream = track.getOriginalStream();
-    const stream = new MediaStream();
-
-    originalStream.getAudioTracks().forEach(t => stream.addTrack(t));
-
-    // Create the MediaRecorder
-    let recorder = new MediaRecorder(stream,
-        { mimeType: fileType });
-
-    return recorder;
-}
+// TODO move up in the hierarchy
+const VOICE_CHECKING_LEN = 1;
 
 /**
  * A TrackRecorder object holds all the information needed for recording a
@@ -26,9 +13,8 @@ function getTrackMediaRecorder(track, fileType) {
  export class TrackRecorder {
     /**
      * @param track The JitsiTrack the object is going to hold
-     * @param timeslice The timeslice to use for the MediaRecorder
      */
-    constructor(track, timeslice, maxUtteranceLen, fileType) {
+    constructor(track, maxUtteranceLen, fileType) {
         // The JitsiTrack holding the stream
         this.track = track;
         this.fileType = fileType;
@@ -53,18 +39,18 @@ function getTrackMediaRecorder(track, fileType) {
         });
         this.mergedStreamSource = this.audioContext.createMediaStreamSource(this.mergedTracksDestination.stream);
         
-        this.audioContext.audioWorklet.addModule("/static/VoiceRecorder.js").then(() => {            
-            this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder");
+        this.audioContext.audioWorklet.addModule("/static/dist/VoiceRecorder.js").then(() => {            
+            this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
+                processorOptions: {
+                    sampleRate: this.audioContext.sampleRate,
+                    voiceCheckingLen: VOICE_CHECKING_LEN,
+                    maxSavedLen: this.maxUtteranceLen
+                }
+            });
+            this.voiceRecorder.port.onmessage = (e) => console.log(e.data);
             this.mergedStreamSource.connect(this.voiceRecorder);
         }).catch((e) => console.error(e));
         console.info(this.audioContext.sampleRate);
-        // this.analyserNode = this.audioContext.createAnalyser();
-        // this.audioContext.audioWorklet.addModule("./VoiceRecorder.js");
-
-        // this needs to be done after connecting the mediaStreamSource, otherwise it will
-        // not adjust to the sample rate of the stream
-        // this.analyserNode.fftSize = 32768;
-        // this.analyserBuffer = new Float32Array(this.analyserNode.fftSize);
     }
 
     /**
@@ -72,10 +58,10 @@ function getTrackMediaRecorder(track, fileType) {
      * @param chunk - the blob with the audio
      */
     async isActive(chunk) {
-        this.analyserNode.getFloatTimeDomainData(this.analyserBuffer);        
+        this.analyserNode.getFloatTimeDomainData(this.analyserBuffer);
         let hasSpeech = false;
         if (!this.VAD) {
-            this.VAD = await vad.NonRealTimeVAD.new({});
+            this.VAD = await NonRealTimeVAD.new({});
         }
         for await (const {audio, start, end} of this.VAD.run(this.analyserBuffer, this.audioContext.sampleRate)) {
             hasSpeech = true;
@@ -83,27 +69,24 @@ function getTrackMediaRecorder(track, fileType) {
         return hasSpeech;
     }
 
-    start(newUtteranceCallback) {
+    start() {
         // this.recorder.start(this.timeslice);
-        this.newUtteranceCallback = newUtteranceCallback;
+        // TODO
         this.startTime = new Date().toISOString();
     }
 
     stop() {
-        // this.recorder.stop();
+        // TODO
     }
 
-    saveTranscript(transcriptObject, author, time) {
-        const utterance = new Utterance(time, author, transcriptObject.transcript);
-        this.newUtteranceCallback(utterance);
-        this.transcripts.push(utterance);
+    encodeData(floatBuffer) {
+        // TODO use lamejs
     }
 
     sendActiveData() {
         // merge the data chunks into a single blob
         // transcribeBlob(blob, this.startTime, this.name);
         // TODO
-        this.start(this.newUtteranceCallback);
     }
 }
 

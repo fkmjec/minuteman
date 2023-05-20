@@ -73,7 +73,7 @@ AudioRecorder.prototype.addTrack = function(track) {
         // If we're already recording, immediately start recording this new
         // track.
         if (this.isRecording) {
-            trackRecorder.start(this.newUtteranceCallback);
+            trackRecorder.start();
         }
     }
 };
@@ -140,7 +140,7 @@ AudioRecorder.prototype.updateNames = function() {
 /**
  * Starts the audio recording of every local and remote track
  */
-AudioRecorder.prototype.start = function(newUtteranceCallback) {
+AudioRecorder.prototype.start = function() {
     if (this.isRecording) {
         throw new Error('audiorecorder is already recording');
     }
@@ -148,9 +148,8 @@ AudioRecorder.prototype.start = function(newUtteranceCallback) {
     // set boolean isRecording flag to true so if new participants join the
     // conference, that track can instantly start recording as well
     this.isRecording = true;
-    this.newUtteranceCallback = newUtteranceCallback;
     // start all the mediaRecorders
-    this.recorders.forEach(trackRecorder => trackRecorder.start(newUtteranceCallback));
+    this.recorders.forEach(trackRecorder => trackRecorder.start());
 
     // log that recording has started
     console.log(

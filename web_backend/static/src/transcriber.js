@@ -99,7 +99,7 @@ Transcriber.prototype.connect = function() {
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
     this.audioRecorder = new AudioRecorder(this.room, AUDIO_RECORD_SLICE, MAX_UTTERANCE_LEN);
-    this.audioRecorder.start(this.onNewUtterance.bind(this));
+    this.audioRecorder.start();
 }
 
 
@@ -192,14 +192,6 @@ Transcriber.prototype.onRoomSelect = function() {
     this.options.bosh = 'https://meet.jit.si/http-bind?room=' + value;
     this.options.roomName = value;
     this.connect(this.options);
-}
-
-
-Transcriber.prototype.onNewUtterance = function(utterance) {
-    // # call something sane for debug purposes, but otherwise it is pointless
-    // this.transcript.addUtterance(utterance);
-    // var transcriptField = document.getElementById('transcript-field');
-    // transcriptField.value = this.transcript.toString(); 
 }
 
 

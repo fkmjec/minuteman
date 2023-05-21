@@ -9,6 +9,15 @@ function mergeChunks(chunks) {
     return merged;
 }
 
+function decimate(data, factor) {
+    const decimated = new Float32Array(Math.ceil(data.length / factor));
+    for (let i = 0; i < decimated.length; i++) {
+        const index = Math.ceil(i * factor);
+        decimated[i] = data[i * factor];
+    }
+    return decimated;
+}
+
 class VoiceRecorder extends AudioWorkletProcessor {
     constructor(options) {
         super();
@@ -23,27 +32,22 @@ class VoiceRecorder extends AudioWorkletProcessor {
             throw new Error("options must be provided to Voice Recorder");
         }
 
-        // this.sampleRate = sampleRate;
-        this.i = 0;
+        this.decimationFactor = this.sampleRate / this.targetSampleRate;        
         this.utteranceStart = new Date();
         this.recording = true;
     }
 
-    setSampleRate(sampleRate) {
-        this.sampleRate = sampleRate;
-    }
-
     // data is a Float32Array
     storeFloats(data) {
-        // TODO decimate
-        this.savedVoiceData.push(data);
+        const decimated = decimate(data, this.decimationFactor);
+        this.savedVoiceData.push(decimated);
     }
 
     stopRecording() {
         this.recording = false;
         // TODO: maybe clean up all the buffers?
+        // this means that the VoiceRecorder will be removed
     }
-
 
     clearBuffer(position) {
         this.savedVoiceData = [];

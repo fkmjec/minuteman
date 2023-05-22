@@ -3,7 +3,7 @@ import { Utterance } from "./transcriptUtils.js";
 import { NonRealTimeVAD } from "@ricky0123/vad-web"
 
 // TODO move up in the hierarchy
-const VOICE_CHECKING_LEN = 1;
+const SENT_CHUNK_LEN = 1.0; // seconds
 
 /**
  * A TrackRecorder object holds all the information needed for recording a
@@ -43,8 +43,8 @@ const VOICE_CHECKING_LEN = 1;
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
-                    targetSampleRate: this.audioContext.sampleRate, // TODO constant
-                    sentChunkLen: 0.5, // TODO constant
+                    targetSampleRate: this.audioContext.sampleRate, // TODO make this smaller and figure out decimation
+                    sentChunkLen: SENT_CHUNK_LEN, // TODO constant
                 }
             });
             this.voiceRecorder.port.onmessage = (e) => this.sendActiveData(e.data);
@@ -53,22 +53,17 @@ const VOICE_CHECKING_LEN = 1;
         console.info(this.audioContext.sampleRate);
     }
     
-
-    start() {
-        // this.recorder.start(this.timeslice);
-        // TODO
-        this.startTime = new Date().toISOString();
-    }
-
     stop() {
-        // TODO
+        this.voiceRecorder.port.postMessage("stop");
+        this.audioContext.close();
     }
 
     /**
      * @param {data} Float32Array of raw audio 
      */
     sendActiveData(data) {
-        sendAudioData(data, this.startTime, this.name);
+        const startTime = new Date(Date.now() - SENT_CHUNK_LEN * 1000);
+        sendAudioData(data, startTime, this.name);
     }
 }
 

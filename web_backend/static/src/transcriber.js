@@ -17,14 +17,13 @@ function Transcriber() {
     this.confOptions = {
     };
 
-    this.audioRecorder = null;
+    this.meetingRecorder = null;
     
     this.connection = null;
     this.isJoined = false;
     this.room = null;
     
     this.tracks = {};
-    this.transcript = new Transcript();
 
     // TODO: transfer this to init constants somewhere
     this.options = {
@@ -55,24 +54,24 @@ Transcriber.prototype.connect = function() {
         this.disconnect.bind(this));
         
     connection.connect();
-        
-    if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
-        JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
-            const audioOutputDevices
-                = devices.filter(d => d.kind === 'audiooutput');
+    // FIXME: I probably do not need this
+    // if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
+    //     JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
+    //         const audioOutputDevices
+    //             = devices.filter(d => d.kind === 'audiooutput');
     
-            if (audioOutputDevices.length > 1) {
-                $('#audioOutputSelect').html(
-                    audioOutputDevices
-                        .map(
-                            d =>
-                                `<option value="${d.deviceId}">${d.label}</option>`)
-                        .join('\n'));
+    //         if (audioOutputDevices.length > 1) {
+    //             $('#audioOutputSelect').html(
+    //                 audioOutputDevices
+    //                     .map(
+    //                         d =>
+    //                             `<option value="${d.deviceId}">${d.label}</option>`)
+    //                     .join('\n'));
     
-                $('#audioOutputSelectWrapper').show();
-            }
-        });
-    }
+    //             $('#audioOutputSelectWrapper').show();
+    //         }
+    //     });
+    // }
     this.connection = connection;
 }
 
@@ -98,8 +97,7 @@ Transcriber.prototype.connect = function() {
     });
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
-    this.audioRecorder = new AudioRecorder(this.room, AUDIO_RECORD_SLICE, MAX_UTTERANCE_LEN);
-    this.audioRecorder.start();
+    this.meetingRecorder = new AudioRecorder(this.room, AUDIO_RECORD_SLICE, MAX_UTTERANCE_LEN);
 }
 
 
@@ -128,12 +126,11 @@ Transcriber.prototype.connect = function() {
     const idx = this.tracks[participant].push(track);
 
     const id = participant + track.getType() + idx;
-    this.audioRecorder.addTrack(track);
-    console.info(track);
+    this.meetingRecorder.addTrack(track);
 }
 
 Transcriber.prototype.onRemoveRemoteTrack = function(track) {
-    this.audioRecorder.removeTrack(track);
+    this.meetingRecorder.removeTrack(track);
 }
 
 
@@ -164,7 +161,6 @@ Transcriber.prototype.onConnectionFailed = function() {
  * This function is called when we disconnect.
  */
  Transcriber.prototype.disconnect = function() {
-    console.log('disconnect!');
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
         // FIXME: does this make sense?
@@ -178,8 +174,8 @@ Transcriber.prototype.onConnectionFailed = function() {
         // FIXME: does this make sense?
         this.disconnect.bind(this));
     // TODO remove all references to audio recording
-    this.audioRecorder.stop();
-    this.audioRecorder = null;
+    this.meetingRecorder.stop();
+    this.meetingRecorder = null;
 }
 
 Transcriber.prototype.onRoomSelect = function() {

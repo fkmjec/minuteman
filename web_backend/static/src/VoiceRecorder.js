@@ -33,6 +33,12 @@ class VoiceRecorder extends AudioWorkletProcessor {
             throw new Error("options must be provided to Voice Recorder");
         }
 
+        this.port.onmessage = (e) => {
+            if (e == "stop") {
+                this.stopRecording();
+            }
+        }
+
         this.decimationFactor = this.sampleRate / this.targetSampleRate;
         console.info(this.decimationFactor);
         this.utteranceStart = new Date();

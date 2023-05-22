@@ -10,11 +10,12 @@ function getTranscriptionApiURL(sessionId) {
     return window.location.origin + "/transcribe_new/" + sessionId
 }
 
-async function sendAudioData(audioData, startTime, author) {
+function sendAudioData(audioData, startTime, author, recorderId) {
     let data = new FormData();
     let sessionId = getSessionId();
     data.append('author', author);
-    data.append('timestamp', startTime);
+    data.append('timestamp', startTime.toISOString());
+    data.append('recorder_id', recorderId);
     const blob = new Blob([audioData.data.buffer], { type: 'application/octet-stream' });
     data.append('chunk', blob);
     let api_url = getTranscriptionApiURL(sessionId);
@@ -22,7 +23,7 @@ async function sendAudioData(audioData, startTime, author) {
         method: 'POST',
         body: data,
     });
-    const response = await fetch(request);
+    fetch(request);
 }
 
 export default sendAudioData;

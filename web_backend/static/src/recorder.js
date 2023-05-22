@@ -1,12 +1,4 @@
-import transcribeBlob from './apiInterface.js';
 import { TrackRecorder } from './trackRecorder.js';
-
-
-/**
- * Possible audio formats MIME types
- */
-const AUDIO_WEBM = 'audio/webm'; // Supported in chrome
-const AUDIO_OGG = 'audio/ogg'; // Supported in firefox
 
 
 /**
@@ -15,15 +7,12 @@ const AUDIO_OGG = 'audio/ogg'; // Supported in firefox
  * @param jitsiConference the jitsiConference which this object
  * is going to record
  */
-function AudioRecorder(jitsiConference, timeslice, maxUtteranceLen) {
+function MeetingRecorder(jitsiConference, timeslice, maxUtteranceLen) {
     // array of TrackRecorders, where each trackRecorder
     // holds the JitsiTrack, MediaRecorder and recorder data
     this.recorders = [];
 
     // get which file type is supported by the current browser
-
-    // boolean flag for active recording
-    this.isRecording = false;
 
     // the timeslice after which we get data from the MediaRecorders
     this.timeslice = timeslice;
@@ -39,7 +28,7 @@ function AudioRecorder(jitsiConference, timeslice, maxUtteranceLen) {
  *
  * @param track the track potentially holding an audio stream
  */
-AudioRecorder.prototype.addTrack = function(track) {
+MeetingRecorder.prototype.addTrack = function(track) {
     if (track.isAudioTrack()) {
         // create the track recorder
         const trackRecorder = new TrackRecorder(track, this.maxUtteranceLen);
@@ -50,13 +39,6 @@ AudioRecorder.prototype.addTrack = function(track) {
 
         // update the name of the trackRecorders
         this.updateNames();
-
-        // If we're already recording, immediately start recording this new
-        // track.
-        // FIXME: we are always recording, this makes no sense
-        if (this.isRecording) {
-            trackRecorder.start();
-        }
     }
 };
 
@@ -71,7 +53,7 @@ AudioRecorder.prototype.addTrack = function(track) {
  *
  * @param {JitsiTrack} track the JitsiTrack to remove from the recording session
  */
-AudioRecorder.prototype.removeTrack = function(track) {
+MeetingRecorder.prototype.removeTrack = function(track) {
     if (track.isVideoTrack()) {
         return;
     }
@@ -101,7 +83,7 @@ AudioRecorder.prototype.removeTrack = function(track) {
  * If it hasn't changed,it will keep the exiting name. If it changes to a
  * undefined value, the old value will also be kept.
  */
-AudioRecorder.prototype.updateNames = function() {
+MeetingRecorder.prototype.updateNames = function() {
     const conference = this.jitsiConference;
 
     this.recorders.forEach(trackRecorder => {
@@ -119,40 +101,16 @@ AudioRecorder.prototype.updateNames = function() {
     });
 };
 
-/**
- * Starts the audio recording of every local and remote track
- */
-AudioRecorder.prototype.start = function() {
-    if (this.isRecording) {
-        throw new Error('audiorecorder is already recording');
-    }
-
-    // set boolean isRecording flag to true so if new participants join the
-    // conference, that track can instantly start recording as well
-    this.isRecording = true;
-    // start all the mediaRecorders
-    this.recorders.forEach(trackRecorder => trackRecorder.start());
-
-    // log that recording has started
-    console.log(
-        `Started the recording of the audio. There are currently ${
-            this.recorders.length} recorders active.`);
-};
-
-/**
- * Stops the audio recording of every local and remote track
- */
-AudioRecorder.prototype.stop = function() {
+MeetingRecorder.prototype.stop = function() {
     // set the boolean flag to false
     this.isRecording = false;
 
     // stop all recorders
     this.recorders.forEach(trackRecorder => trackRecorder.stop());
-    console.log('stopped recording');
 };
 
 
 /**
  * export the main object AudioRecorder
  */
-export default AudioRecorder;
+export default MeetingRecorder;

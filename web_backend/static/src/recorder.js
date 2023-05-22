@@ -10,20 +10,6 @@ const AUDIO_OGG = 'audio/ogg'; // Supported in firefox
 
 
 /**
- * Determines which kind of audio recording the browser supports
- * chrome supports "audio/webm" and firefox supports "audio/ogg"
- */
-function determineCorrectFileType() {
-    if (MediaRecorder.isTypeSupported(AUDIO_WEBM)) {
-        return AUDIO_WEBM;
-    } else if (MediaRecorder.isTypeSupported(AUDIO_OGG)) {
-        return AUDIO_OGG;
-    }
-    throw new Error(
-        'unable to create a MediaRecorder with the right mimetype!');
-}
-
-/**
  * main exported object of the file, holding all
  * relevant functions and variables for the outside world
  * @param jitsiConference the jitsiConference which this object
@@ -35,7 +21,6 @@ function AudioRecorder(jitsiConference, timeslice, maxUtteranceLen) {
     this.recorders = [];
 
     // get which file type is supported by the current browser
-    this.fileType = determineCorrectFileType();
 
     // boolean flag for active recording
     this.isRecording = false;
@@ -48,10 +33,6 @@ function AudioRecorder(jitsiConference, timeslice, maxUtteranceLen) {
     this.jitsiConference = jitsiConference;
 }
 
-/**
- * Add the exported module so that it can be accessed by other files
- */
-AudioRecorder.determineCorrectFileType = determineCorrectFileType;
 
 /**
  * Adds a new TrackRecorder object to the array.
@@ -61,7 +42,7 @@ AudioRecorder.determineCorrectFileType = determineCorrectFileType;
 AudioRecorder.prototype.addTrack = function(track) {
     if (track.isAudioTrack()) {
         // create the track recorder
-        const trackRecorder = new TrackRecorder(track, this.timeslice, this.maxUtteranceLen, this.fileType);
+        const trackRecorder = new TrackRecorder(track, this.maxUtteranceLen);
 
         // push it to the local array of all recorders
 
@@ -72,6 +53,7 @@ AudioRecorder.prototype.addTrack = function(track) {
 
         // If we're already recording, immediately start recording this new
         // track.
+        // FIXME: we are always recording, this makes no sense
         if (this.isRecording) {
             trackRecorder.start();
         }
@@ -169,14 +151,6 @@ AudioRecorder.prototype.stop = function() {
     console.log('stopped recording');
 };
 
-
-/**
- * Gets the mime type of the recorder audio
- * @returns {String} the mime type of the recorder audio
- */
-AudioRecorder.prototype.getFileType = function() {
-    return this.fileType;
-};
 
 /**
  * export the main object AudioRecorder

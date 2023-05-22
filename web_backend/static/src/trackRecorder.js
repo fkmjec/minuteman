@@ -1,4 +1,4 @@
-import transcribeBlob from "./apiInterface.js";
+import sendAudioData from "./apiInterface.js";
 import { Utterance } from "./transcriptUtils.js";
 import { NonRealTimeVAD } from "@ricky0123/vad-web"
 
@@ -14,10 +14,9 @@ const VOICE_CHECKING_LEN = 1;
     /**
      * @param track The JitsiTrack the object is going to hold
      */
-    constructor(track, maxUtteranceLen, fileType) {
+    constructor(track, maxUtteranceLen) {
         // The JitsiTrack holding the stream
         this.track = track;
-        this.fileType = fileType;
 
         // the name of the person of the JitsiTrack. This can be undefined and/or
         // not unique
@@ -30,6 +29,7 @@ const VOICE_CHECKING_LEN = 1;
         const originalStream = track.getOriginalStream();
         
         // merge the (usually stereo) audio tracks into one
+        // FIXME: into a special function?
         this.mergedTracksDestination = new MediaStreamAudioDestinationNode(this.audioContext, { channelCount: 1 });
         this.inNodes = [];
         originalStream.getAudioTracks().forEach(t => {
@@ -43,16 +43,16 @@ const VOICE_CHECKING_LEN = 1;
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
-                    targetSampleRate: 16000, // TODO constant
-                    sentChunkLen: 0.1,
+                    targetSampleRate: this.audioContext.sampleRate, // TODO constant
+                    sentChunkLen: 0.5, // TODO constant
                 }
             });
-            this.voiceRecorder.port.onmessage = (e) => console.log(e.data);
+            this.voiceRecorder.port.onmessage = (e) => this.sendActiveData(e.data);
             this.mergedStreamSource.connect(this.voiceRecorder);
         }).catch((e) => console.error(e));
         console.info(this.audioContext.sampleRate);
     }
-
+    
 
     start() {
         // this.recorder.start(this.timeslice);
@@ -64,14 +64,11 @@ const VOICE_CHECKING_LEN = 1;
         // TODO
     }
 
-    encodeData(floatBuffer) {
-        // TODO use lamejs?
-    }
-
-    sendActiveData() {
-        // merge the data chunks into a single blob
-        // transcribeBlob(blob, this.startTime, this.name);
-        // TODO
+    /**
+     * @param {data} Float32Array of raw audio 
+     */
+    sendActiveData(data) {
+        sendAudioData(data, this.startTime, this.name);
     }
 }
 

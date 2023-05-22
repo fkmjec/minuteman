@@ -7,15 +7,15 @@ function getSessionId() {
 
 function getTranscriptionApiURL(sessionId) {
     // TODO: fix by passing values from the server?
-    return window.location.origin + "/transcribe/" + sessionId
+    return window.location.origin + "/transcribe_new/" + sessionId
 }
 
-async function transcribeBlob(blob, startTime, author) {
-    // make a POST request to API_URL with the blob in webm as the contents
+async function sendAudioData(audioData, startTime, author) {
     let data = new FormData();
     let sessionId = getSessionId();
     data.append('author', author);
     data.append('timestamp', startTime);
+    const blob = new Blob([audioData.data.buffer], { type: 'application/octet-stream' });
     data.append('chunk', blob);
     let api_url = getTranscriptionApiURL(sessionId);
     const request = new Request(api_url, {
@@ -23,7 +23,6 @@ async function transcribeBlob(blob, startTime, author) {
         body: data,
     });
     const response = await fetch(request);
-    const transcriptData = await response.json();
 }
 
-export default transcribeBlob;
+export default sendAudioData;

@@ -10,9 +10,10 @@ function mergeChunks(chunks) {
 }
 
 function decimate(data, factor) {
-    const decimated = new Float32Array(Math.ceil(data.length / factor));
+    // TODO: this is just a placeholder, we need to get a library for this
+    const decimated = new Float32Array(Math.floor(data.length / factor));
     for (let i = 0; i < decimated.length; i++) {
-        const index = Math.ceil(i * factor);
+        const index = Math.floor(i * factor);
         decimated[i] = data[i * factor];
     }
     return decimated;
@@ -32,7 +33,8 @@ class VoiceRecorder extends AudioWorkletProcessor {
             throw new Error("options must be provided to Voice Recorder");
         }
 
-        this.decimationFactor = this.sampleRate / this.targetSampleRate;        
+        this.decimationFactor = this.sampleRate / this.targetSampleRate;
+        console.info(this.decimationFactor);
         this.utteranceStart = new Date();
         this.recording = true;
     }
@@ -60,7 +62,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
         }
         const chunkLen = this.savedVoiceData[0].length;
         const totalLen = this.savedVoiceData.length * chunkLen;
-        const lenInSec = totalLen / this.sampleRate;
+        const lenInSec = totalLen / (this.sampleRate /  this.decimationFactor);
         return lenInSec >= this.sentChunkLen;
     }
   
@@ -76,7 +78,8 @@ class VoiceRecorder extends AudioWorkletProcessor {
         if (relevantData) {
             this.storeFloats(relevantData);
             if (this.shouldSend()) {
-                this.port.postMessage({ type: "voiceData", data: this.savedVoiceData });
+                let merged = mergeChunks(this.savedVoiceData);
+                this.port.postMessage({ type: "voiceData", data: merged });
                 this.clearBuffer();
             }
         }

@@ -6,6 +6,7 @@ module.exports = [
   name: "main",
   entry: "./src/index.js",
   target: "web",
+  mode: "development",
   output: { 
     filename: "main.js",
   }

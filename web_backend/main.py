@@ -1,5 +1,6 @@
 import logging
 import os
+import struct
 
 import api_interface
 import etherpad_interface
@@ -114,3 +115,20 @@ def pad_change(pad_id):
     except ValueError as va:
         logging.debug("Got valueChange from another editor! People seem to be using it liberally!")
         return jsonify({"status_code": 200, "message": "ok"})
+
+
+# placeholder endpoint for the development of the new ASR api
+@app.route("/transcribe_new/<session_id>", methods=["POST"])
+def transcribe_new(session_id):
+    float_array = []
+    timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
+    author = request.form.get("author")
+    recorder_id = request.form.get("recorder_id")
+    chunk = request.files.get("chunk")
+    binary_data = chunk.read()
+
+    for i in range(0, len(binary_data), 4):
+        float_value = struct.unpack('<f', binary_data[i:i+4])[0]
+        float_array.append(float_value)
+    
+    return jsonify({"status_code": 200, "message": "ok"})

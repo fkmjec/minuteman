@@ -78,20 +78,20 @@ def index():
     return redirect(url_for('minuting', session_id=id))
 
 
-@app.route("/transcribe/<session_id>", methods=["POST"])
-def add_transcript(session_id):
-    logging.debug("Received request to transcribe")
-    timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
-    author = request.form.get("author")
-    chunk = request.files.get("chunk")
-    transcribed_text = torch_interface.transcribe_chunk(chunk)
-    db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
-    editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
-    transcript = editor_interface.get_transcript(session_id)
-    past_minutes = editor_interface.get_minutes(session_id)
-    update_minutes(session_id, transcript, past_minutes)
-    # we get the transcript here because it could have been edited by users
-    return jsonify({"transcript": transcribed_text})
+# @app.route("/transcribe/<session_id>", methods=["POST"])
+# def add_transcript(session_id):
+#     logging.debug("Received request to transcribe")
+#     timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
+#     author = request.form.get("author")
+#     chunk = request.files.get("chunk")
+#     transcribed_text = torch_interface.transcribe_chunk(chunk)
+#     db_interface.store_utterance(session_id, transcribed_text, timestamp, author)
+#     editor_interface.add_trsc_line(session_id, view_utils.get_formatted_utterance(author, transcribed_text))
+#     transcript = editor_interface.get_transcript(session_id)
+#     past_minutes = editor_interface.get_minutes(session_id)
+#     update_minutes(session_id, transcript, past_minutes)
+#     # we get the transcript here because it could have been edited by users
+#     return jsonify({"transcript": transcribed_text})
 
 
 # API endpoint for notification from the pad that either a summary or a transcript was edited by the user
@@ -118,7 +118,7 @@ def pad_change(pad_id):
 
 
 # placeholder endpoint for the development of the new ASR api
-@app.route("/transcribe_new/<session_id>", methods=["POST"])
+@app.route("/transcribe/<session_id>", methods=["POST"])
 def transcribe_new(session_id):
     float_array = []
     timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))

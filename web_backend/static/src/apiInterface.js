@@ -7,7 +7,7 @@ function getSessionId() {
 
 function getTranscriptionApiURL(sessionId) {
     // TODO: fix by passing values from the server?
-    return window.location.origin + "/transcribe_new/" + sessionId
+    return window.location.origin + "/transcribe/" + sessionId
 }
 
 function sendAudioData(audioData, startTime, author, recorderId) {

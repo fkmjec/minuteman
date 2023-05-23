@@ -12,6 +12,12 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for, a
 from forms import TranscriptInputForm
 from transformers import BartTokenizer
 from extensions import db
+import numpy as np
+import pika
+from scipy import signal
+
+TARGET_SAMPLE_RATE = 16000
+SRC_SAMPLE_RATE = 44100.0
 
 app = Flask(__name__)
 # load config from env variables
@@ -119,7 +125,7 @@ def pad_change(pad_id):
 
 # placeholder endpoint for the development of the new ASR api
 @app.route("/transcribe/<session_id>", methods=["POST"])
-def transcribe_new(session_id):
+def transcribe(session_id):
     float_array = []
     timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
     author = request.form.get("author")
@@ -130,5 +136,12 @@ def transcribe_new(session_id):
     for i in range(0, len(binary_data), 4):
         float_value = struct.unpack('<f', binary_data[i:i+4])[0]
         float_array.append(float_value)
-    
+
+    float_array = np.array(float_array)
+    float_array = signal.resample(float_array, TARGET_SAMPLE_RATE)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+    channel = connection.channel()
+    channel.queue_declare("transcription_queue")
+    channel.basic_publish(exchange='', routing_key='transcription_queue', body=float_array.tobytes())
+    connection.close()
     return jsonify({"status_code": 200, "message": "ok"})

@@ -7,6 +7,7 @@ import etherpad_interface
 import view_utils
 import text_utils
 import config
+import audio_chunk
 from models import DBInterface
 from flask import Flask, jsonify, render_template, request, redirect, url_for, abort
 from forms import TranscriptInputForm
@@ -139,9 +140,10 @@ def transcribe(session_id):
 
     float_array = np.array(float_array)
     float_array = signal.resample(float_array, TARGET_SAMPLE_RATE)
+    chunk = audio_chunk.AudioChunk(session_id, recorder_id, float_array)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()
     channel.queue_declare("transcription_queue")
-    channel.basic_publish(exchange='', routing_key='transcription_queue', body=float_array.tobytes())
+    channel.basic_publish(exchange='', routing_key='transcription_queue', body=chunk.serialize())
     connection.close()
     return jsonify({"status_code": 200, "message": "ok"})

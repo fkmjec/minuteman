@@ -3,51 +3,103 @@ import logging
 import audio_chunk
 import whisper_online
 
+import onnxruntime
+import numpy as np
 from mosestokenizer import MosesTokenizer
+from faster_whisper import vad
 import os
+import json
 import time
 
 WHISPER_MODEL = "base.en"
 MAX_RABBITMQ_RETRIES = 20
+SILERO_VAD_MODEL = "silero_vad.onnx"
+VAD_CHUNK_SIZE = 512
+MAX_PROB_THR = 0.5
+SAMPLING_RATE = 16000
+MAX_CHUNKS = 15
+
+class SpeechDetector:
+    def __init__(self, model_path):
+        self.model = vad.SileroVADModel(model_path)
+    
+    def detect_speech(self, audio: np.array):
+        state = self.model.get_initial_state(1)
+        max_prob = 0
+        for i in range(0, len(audio), VAD_CHUNK_SIZE):
+            chunk = audio[i:i + VAD_CHUNK_SIZE]
+
+            if len(chunk) < VAD_CHUNK_SIZE:
+                chunk = np.pad(chunk, (0, int(VAD_CHUNK_SIZE - len(chunk))))
+            speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
+            print(speech_prob)
+            if speech_prob[0][0] > max_prob:
+                max_prob = speech_prob
+        if max_prob > MAX_PROB_THR:
+            return True
+        return False
+
+class TrackTranscriber:
+    def __init__(self, name):
+        self.name = name
+        self.chunks = []
+    
+    def push_chunk(self, new_chunk):
+        self.chunks.append(new_chunk.astype(np.float32))
+    
+    def is_ready(self, speech_detector):
+        if len(self.chunks) > 0:
+            # is ready if all chunks contain speech except the last one
+            return not speech_detector.detect_speech(self.chunks[-1]) or len(self.chunks) > MAX_CHUNKS
+        return False
+    
+    def flush(self):
+        audio = np.concatenate(self.chunks, dtype=np.float32)
+        self.chunks = []
+        return audio
 
 class MeetingTranscriber:
     def __init__(self):
-        self.processors = {}
+        self.tracks = {}
 
-    def add_chunk(self, track_id, chunk):
-        if track_id not in self.processors:
-            self.processors[track_id] = whisper_online.OnlineASRProcessor("en", backend, tokenizer)
-        self.processors[track_id].insert_audio_chunk(chunk)
+    def add_chunk(self, recorder_id, name, chunk):
+        if recorder_id not in self.tracks:
+            self.tracks[recorder_id] = TrackTranscriber(name)
+        return self.tracks[recorder_id].push_chunk(chunk)
     
-    def get_new_utterances(self):
-        for track_id, processor in self.processors.items():
-            new_speech = processor.process_iter()
-            if new_speech[0] is None:
-                continue
-            print(f"{track_id}: {new_speech[2]}")
-
-    def is_ready(self):
-        return True
-
 class Transcripts:
     def __init__(self):
-        self.transcripts = {}
+        self.meetings = {}
     
     def _add_session(self, session_id):
-        self.transcripts[session_id] = MeetingTranscriber()
+        self.meetings[session_id] = MeetingTranscriber()
     
-    def add_chunk(self, session_id, track_id, chunk):
+    def add_chunk(self, session_id, recorder_id, chunk):
         # TODO: if multiprocessing becomes necessary, we will need locks here
-        if session_id not in self.transcripts:
+        if session_id not in self.meetings:
             self._add_session(session_id)
-        self.transcripts[session_id].add_chunk(track_id, chunk)
-        if self.transcripts[session_id].is_ready():
-            self.transcripts[session_id].get_new_utterances()
-
+        self.meetings[session_id].add_chunk(recorder_id, "hek", chunk)
+    
+    def is_ready(self, session_id, recorder_id, speech_detector):
+        if session_id not in self.meetings:
+            raise ValueError("Meeting not found")
+        if recorder_id not in self.meetings[session_id].tracks:
+            raise ValueError("Track not found")
+        return self.meetings[session_id].tracks[recorder_id].is_ready(speech_detector)
 
 def callback(ch, method, properties, body):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
-    transcripts.add_chunk(deserialized.get_session_id(), deserialized.get_recorder_id(), deserialized.get_chunk())
+    session_id = deserialized.get_session_id()
+    recorder_id = deserialized.get_recorder_id()
+    chunk = deserialized.get_chunk()
+    transcripts.add_chunk(session_id, recorder_id, chunk)
+    if transcripts.is_ready(session_id, recorder_id, speech_detector):
+        audio = transcripts.meetings[session_id].tracks[recorder_id].flush()
+        transcript = backend.transcribe(audio)
+        channel.queue_declare("transcript_queue")
+        utterance = {"name": "TODO name", "utterance": transcript.text}
+        channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
+        print(" [x] transcribed %r" % transcript.text)
     print(" [x] Received %r" % deserialized.get_session_id())
 
 if __name__ == "__main__":
@@ -60,7 +112,7 @@ if __name__ == "__main__":
     else:
         backend = whisper_online.FasterWhisperASR("en", modelsize=WHISPER_MODEL, device="cuda")
     tokenizer = MosesTokenizer("en")
-    print("Loaded ASR model")
+    speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     transcripts = Transcripts()
     retries = 0
     while retries < 20:
@@ -73,6 +125,6 @@ if __name__ == "__main__":
             time.sleep(1)
         
     channel = connection.channel()
-    channel.queue_declare("transcription_queue")
-    channel.basic_consume(queue='transcription_queue', on_message_callback=callback, auto_ack=True)
+    channel.queue_declare("audio_chunk_queue")
+    channel.basic_consume(queue='audio_chunk_queue', on_message_callback=callback, auto_ack=True)
     channel.start_consuming()

@@ -1,6 +1,4 @@
 import sendAudioData from "./apiInterface.js";
-import { Utterance } from "./transcriptUtils.js";
-import { NonRealTimeVAD } from "@ricky0123/vad-web"
 
 // TODO move up in the hierarchy
 const SENT_CHUNK_LEN = 1.0; // seconds
@@ -24,7 +22,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
 
         // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
         this.maxUtteranceLen = maxUtteranceLen;
-        this.audioContext = new AudioContext();
+        this.audioContext = new AudioContext({ sampleRate: 44100});
 
         const originalStream = track.getOriginalStream();
         
@@ -33,6 +31,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
         this.mergedTracksDestination = new MediaStreamAudioDestinationNode(this.audioContext, { channelCount: 1 });
         this.inNodes = [];
         originalStream.getAudioTracks().forEach(t => {
+            console.info(t);
             let inNode = this.audioContext.createMediaStreamTrackSource(t);
             this.inNodes.push(inNode);
             inNode.connect(this.mergedTracksDestination);

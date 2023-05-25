@@ -8,6 +8,7 @@ import os
 import time
 
 WHISPER_MODEL = "base.en"
+MAX_RABBITMQ_RETRIES = 20
 
 class MeetingTranscriber:
     def __init__(self):
@@ -61,7 +62,16 @@ if __name__ == "__main__":
     tokenizer = MosesTokenizer("en")
     print("Loaded ASR model")
     transcripts = Transcripts()
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+    retries = 0
+    while retries < 20:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+            break
+        except (pika.exceptions.AMQPConnectionError):
+            print(f"Waiting for rabbitmq, retry {retries + 1}")
+            retries += 1
+            time.sleep(1)
+        
     channel = connection.channel()
     channel.queue_declare("transcription_queue")
     channel.basic_consume(queue='transcription_queue', on_message_callback=callback, auto_ack=True)

@@ -7,7 +7,7 @@ import { TrackRecorder } from './trackRecorder.js';
  * @param jitsiConference the jitsiConference which this object
  * is going to record
  */
-function MeetingRecorder(jitsiConference, timeslice, maxUtteranceLen) {
+function MeetingRecorder(jitsiConference, maxUtteranceLen) {
     // array of TrackRecorders, where each trackRecorder
     // holds the JitsiTrack, MediaRecorder and recorder data
     this.recorders = [];
@@ -15,7 +15,6 @@ function MeetingRecorder(jitsiConference, timeslice, maxUtteranceLen) {
     // get which file type is supported by the current browser
 
     // the timeslice after which we get data from the MediaRecorders
-    this.timeslice = timeslice;
     this.maxUtteranceLen = maxUtteranceLen;
 
     // the jitsiconference the object is recording

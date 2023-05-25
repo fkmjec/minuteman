@@ -6,16 +6,15 @@ module.exports = [
   name: "main",
   entry: "./src/index.js",
   target: "web",
-  mode: "development",
-  output: { 
+  output: {
+    globalObject: "this",
     filename: "main.js",
-  }
+  },
 },
 {
   name: "VoiceRecorder",
   entry: "./src/VoiceRecorder.js",
   target: "web",
-  mode: "development",
   output: {
     filename: "VoiceRecorder.js",
   },

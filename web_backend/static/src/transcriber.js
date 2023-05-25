@@ -1,5 +1,4 @@
-import AudioRecorder from './recorder.js'
-import { Transcript, Utterance } from './transcriptUtils.js'
+import MeetingRecorder from './recorder.js'
 
 const AUDIO_RECORD_SLICE = 1000;
 const MAX_UTTERANCE_LEN = 10000;
@@ -97,7 +96,7 @@ Transcriber.prototype.connect = function() {
     });
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
-    this.meetingRecorder = new AudioRecorder(this.room, AUDIO_RECORD_SLICE, MAX_UTTERANCE_LEN);
+    this.meetingRecorder = new MeetingRecorder(this.room, MAX_UTTERANCE_LEN);
 }
 
 

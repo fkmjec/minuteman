@@ -9,14 +9,6 @@
   },
   "author": "František Kmječ",
   "license": "Apache-2.0",
-  "dependencies": {
-    "@ricky0123/vad": "^0.2.4",
-    "@ricky0123/vad-web": "^0.0.12",
-    "lamejs": "^1.2.1",
-    "lib-jitsi-meet": "^1.0.6",
-    "node-vad": "^1.1.4",
-    "onnxruntime-web": "^1.14.0"
-  },
   "devDependencies": {
     "copy-webpack-plugin": "^11.0.0",
     "webpack": "^5.82.1",

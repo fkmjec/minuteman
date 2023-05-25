@@ -47,8 +47,8 @@ class Transcripts:
 
 def callback(ch, method, properties, body):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
-    transcripts.add_chunk(deserialized.session_id, deserialized.track_id, deserialized.chunk)
-    print(" [x] Received %r" % deserialized.session_id)
+    transcripts.add_chunk(deserialized.get_session_id(), deserialized.get_recorder_id(), deserialized.get_chunk())
+    print(" [x] Received %r" % deserialized.get_session_id())
 
 if __name__ == "__main__":
     # we now assume one worker, maybe we will scale to more later

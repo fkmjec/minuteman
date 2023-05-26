@@ -7,10 +7,21 @@ const padMessageHandler = require('ep_etherpad-lite/node/handler/PadMessageHandl
 const readOnlyManager = require('ep_etherpad-lite/node/db/ReadOnlyManager.js');
 const fetch = require('node-fetch');
 const apiUtils = require('./apiUtils');
-const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite'); 
+const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
+const amqplib = require('amqplib');
+
 
 const SEPARATOR_LINE_STR = "-----TRANSCRIPT SEPARATOR-----";
+const QUEUE = 'transcript_queue';
+const RABBITMQ_ADDR = 'amqp://rabbitmq';
+MAX_RABBITMQ_RETRIES = 20;
+
   
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
 
 // generate a changeset for a summary line. This includes saving the proper
 // attributes. We presume the text has been cleaned before.
@@ -72,9 +83,36 @@ exports.collectContentPre = function(hook, context, cb){
     cb();
 }
 
+async function connectToRabbitMQ() {
+    let retries = 0;
+    console.log("Connecting to rabbitmq server");
+    while (true) {
+        try {
+            let connection = await amqplib.connect(RABBITMQ_ADDR);
+            let channel = await connection.createChannel();
+            await channel.assertQueue(QUEUE);
+            channel.consume(QUEUE, (msg) => {
+                console.log(msg.content.toString());
+            });
+            console.log("Successfully connected to rabbitmq")
+            break;
+        } catch (err) {
+            console.error(err);
+            retries += 1;
+            if (retries > MAX_RABBITMQ_RETRIES) {
+                console.error("Failed to connect to rabbitmq server");
+                throw err;
+            }
+            await sleep(1000);
+        }
+    }
+}
+
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
+    // try connecting to rabbitmq server with 20 retries
+    connectToRabbitMQ();
     args.app.post("/api/appendSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {
             new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));

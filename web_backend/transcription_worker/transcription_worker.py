@@ -32,7 +32,6 @@ class SpeechDetector:
             if len(chunk) < VAD_CHUNK_SIZE:
                 chunk = np.pad(chunk, (0, int(VAD_CHUNK_SIZE - len(chunk))))
             speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
-            print(speech_prob)
             if speech_prob[0][0] > max_prob:
                 max_prob = speech_prob
         if max_prob > MAX_PROB_THR:
@@ -96,10 +95,10 @@ def callback(ch, method, properties, body):
     if transcripts.is_ready(session_id, recorder_id, speech_detector):
         audio = transcripts.meetings[session_id].tracks[recorder_id].flush()
         transcript = backend.transcribe(audio)
-        channel.queue_declare("transcript_queue")
-        utterance = {"name": "TODO name", "utterance": transcript.text}
-        channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
-        print(" [x] transcribed %r" % transcript.text)
+        if len(transcript) > 0:
+            channel.queue_declare("transcript_queue", durable=True)
+            utterance = {"name": "TODO name", "utterance": transcript[0].text}
+            channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
     print(" [x] Received %r" % deserialized.get_session_id())
 
 if __name__ == "__main__":

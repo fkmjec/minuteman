@@ -5,6 +5,7 @@
   "author": "fkmjec <frantisek.kmjec@gmail.com> (František Kmječ)",
   "contributors": [],
   "dependencies": {
+    "amqplib": "^0.10.3",
     "formidable": "^2.0.1",
     "node-fetch": "^2.6.9"
   },

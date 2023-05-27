@@ -62,7 +62,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
      */
     sendActiveData(data) {
         const startTime = new Date(Date.now() - SENT_CHUNK_LEN * 1000);
-        sendAudioData(data, startTime, this.name);
+        sendAudioData(data, startTime, this.name, this.track.id);
     }
 }
 

@@ -1,6 +1,7 @@
 import pika
 import logging
 import threading
+import dateutil
 
 import audio_chunk
 import whisper_online
@@ -14,10 +15,9 @@ import os
 import json
 import time
 
-WHISPER_MODEL = "base.en"
+WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 20
 SILERO_VAD_MODEL = "silero_vad.onnx"
-# WHISPER_MODEL = "whisper_dir/faster-whisper-base.en"
 VAD_CHUNK_SIZE = 512
 MAX_PROB_THR = 0.99
 SAMPLING_RATE = 16000
@@ -38,6 +38,7 @@ class SpeechDetector:
             speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
             if speech_prob[0][0] > max_prob:
                 max_prob = speech_prob
+        logger.info(f"probability:{max_prob}")
         if max_prob > MAX_PROB_THR:
             return True
         return False
@@ -94,6 +95,8 @@ def callback(ch, method, properties, body):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
     recorder_id = deserialized.get_recorder_id()
+    author = deserialized.get_author()
+    timestamp = deserialized.get_timestamp()
     chunk = deserialized.get_chunk()
     transcripts.add_chunk(session_id, recorder_id, chunk)
     if transcripts.is_ready(session_id, recorder_id, speech_detector):
@@ -104,10 +107,10 @@ def callback(ch, method, properties, body):
             utterance_text += segment.text + " "
             logger.info(f"Transcript {i}: {segment.text}")
         if len(utterance_text) > 0:
-            utterance = {"author": "TODO name", "utterance": utterance_text}
+            utterance = {"author": author, "utterance": utterance_text, "session_id": session_id}
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
-    print(" [x] Received %r" % deserialized.get_session_id())
+    logger.info(" [x] Received %r" % deserialized.get_session_id())
 
 if __name__ == "__main__":
     # we now assume one worker, maybe we will scale to more later

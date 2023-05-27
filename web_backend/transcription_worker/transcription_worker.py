@@ -1,7 +1,10 @@
 import pika
 import logging
+import threading
+
 import audio_chunk
 import whisper_online
+import faster_whisper
 
 import onnxruntime
 import numpy as np
@@ -14,8 +17,9 @@ import time
 WHISPER_MODEL = "base.en"
 MAX_RABBITMQ_RETRIES = 20
 SILERO_VAD_MODEL = "silero_vad.onnx"
+# WHISPER_MODEL = "whisper_dir/faster-whisper-base.en"
 VAD_CHUNK_SIZE = 512
-MAX_PROB_THR = 0.5
+MAX_PROB_THR = 0.9
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
@@ -94,10 +98,15 @@ def callback(ch, method, properties, body):
     transcripts.add_chunk(session_id, recorder_id, chunk)
     if transcripts.is_ready(session_id, recorder_id, speech_detector):
         audio = transcripts.meetings[session_id].tracks[recorder_id].flush()
-        transcript = backend.transcribe(audio)
-        if len(transcript) > 0:
+        transcript, info = backend.transcribe(audio)
+        utterance_text = ""
+        
+        for i, segment in enumerate(transcript):
+            utterance_text += segment.text + " "
+        print(utterance_text)
+        if len(utterance_text) > 0:
+            utterance = {"author": "TODO name", "utterance": utterance_text}
             channel.queue_declare("transcript_queue", durable=True)
-            utterance = {"name": "TODO name", "utterance": transcript[0].text}
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
     print(" [x] Received %r" % deserialized.get_session_id())
 
@@ -105,24 +114,27 @@ if __name__ == "__main__":
     # we now assume one worker, maybe we will scale to more later
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-
-    if os.environ['MOCK_ML_MODELS'] == "true":
-        backend = whisper_online.FasterWhisperASR("en", modelsize=WHISPER_MODEL, device="cpu")
-    else:
-        backend = whisper_online.FasterWhisperASR("en", modelsize=WHISPER_MODEL, device="cuda")
-    tokenizer = MosesTokenizer("en")
+    print("Starting transcription worker")
+    print("Loading whisper model")
+    backend = faster_whisper.WhisperModel(WHISPER_MODEL)
+    # warm up the model
+    print("Warming up whisper model")
+    backend.transcribe(np.zeros(1000, dtype=np.float32))
+    print("Loading speech detector")
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     transcripts = Transcripts()
     retries = 0
+    print("Waiting for rabbitmq")
     while retries < 20:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+            # FIXME: disabled heartbeats for now, because threading would be way too complex
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
             break
         except (pika.exceptions.AMQPConnectionError):
             print(f"Waiting for rabbitmq, retry {retries + 1}")
             retries += 1
             time.sleep(1)
-        
+    print("Connected to rabbitmq")
     channel = connection.channel()
     channel.queue_declare("audio_chunk_queue")
     channel.basic_consume(queue='audio_chunk_queue', on_message_callback=callback, auto_ack=True)

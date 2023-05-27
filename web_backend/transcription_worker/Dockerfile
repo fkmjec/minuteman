@@ -11,6 +11,8 @@ RUN pip install --upgrade pip && pip wheel --no-cache-dir --no-deps --wheel-dir 
 
 # final stage
 FROM python:3.10-slim
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 RUN addgroup --gid 1001 --system app && \
     adduser --shell /bin/false --disabled-password --uid 1001 --system --group app

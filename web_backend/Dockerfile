@@ -21,6 +21,8 @@ RUN addgroup --gid 1001 --system app && \
     adduser --shell /bin/false --disabled-password --uid 1001 --system --group app
 
 USER app
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 WORKDIR ./app
 COPY --from=builder /app/wheels /wheels

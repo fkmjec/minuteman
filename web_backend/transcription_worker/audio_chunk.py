@@ -8,7 +8,7 @@ class AudioChunk:
         recorder_id: str = None,
         chunk: np.ndarray = None,
         author: str = None,
-        timestamp
+        timestamp=None
     ):
         self._data = {}
         self._data["session_id"] = session_id

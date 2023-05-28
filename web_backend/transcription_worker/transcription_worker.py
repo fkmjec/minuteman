@@ -19,7 +19,7 @@ WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 20
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
-MAX_PROB_THR = 0.99
+MAX_PROB_THR = 0.95
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
@@ -44,20 +44,37 @@ class SpeechDetector:
         return False
 
 class TrackTranscriber:
-    def __init__(self, name):
-        self.name = name
+    """
+    A class for transcribing a single audio track transmitted from a javascript TrackRecorder.
+    It holds a continuous segment of audio in its chunks list. All of the segment should contain
+    speech. The user of the object is responsible for keeping that invariant.
+    """
+    def __init__(self):
         self.chunks = []
+        self.pushable_audio = None
     
-    def push_chunk(self, new_chunk):
-        self.chunks.append(new_chunk.astype(np.float32))
-    
-    def is_ready(self, speech_detector):
+    def _push_chunk(self, new_chunk):
+        self.chunks.append(new_chunk)
         if len(self.chunks) > 1:
-            # is ready if all chunks contain speech except the last one
-            return not speech_detector.detect_speech(self.chunks[-1]) or len(self.chunks) > MAX_CHUNKS
-        return False
+            return self.chunks[-2]
     
-    def flush(self):
+    def _is_ready(self):
+        return len(self.chunks) >= 1
+
+    def update(self, new_chunk, contains_speech):
+        pushable_audio = None
+        has_audio = False
+        if contains_speech:
+            self._push_chunk(new_chunk)
+            if len(self.chunks) > MAX_CHUNKS:
+                pushable_audio = self._flush()
+                has_audio = True
+        elif self._is_ready():
+            pushable_audio = self._flush()
+            has_audio = True
+        return has_audio, pushable_audio
+    
+    def _flush(self):
         audio = np.concatenate(self.chunks, dtype=np.float32)
         self.chunks = []
         return audio
@@ -66,10 +83,12 @@ class MeetingTranscriber:
     def __init__(self):
         self.tracks = {}
 
-    def add_chunk(self, recorder_id, name, chunk):
+    def add_chunk(self, recorder_id, chunk, contains_speech):
         if recorder_id not in self.tracks:
-            self.tracks[recorder_id] = TrackTranscriber(name)
-        return self.tracks[recorder_id].push_chunk(chunk)
+            self.tracks[recorder_id] = TrackTranscriber()
+        has_audio, pushable_audio = self.tracks[recorder_id].update(chunk, contains_speech)
+        # TODO: create transcriptions when the whole meeting is ready
+        return has_audio, pushable_audio
     
 class Transcripts:
     def __init__(self):
@@ -78,18 +97,11 @@ class Transcripts:
     def _add_session(self, session_id):
         self.meetings[session_id] = MeetingTranscriber()
     
-    def add_chunk(self, session_id, recorder_id, chunk):
+    def add_chunk(self, session_id, recorder_id, chunk, contains_speech):
         # TODO: if multiprocessing becomes necessary, we will need locks here
         if session_id not in self.meetings:
             self._add_session(session_id)
-        self.meetings[session_id].add_chunk(recorder_id, "hek", chunk)
-    
-    def is_ready(self, session_id, recorder_id, speech_detector):
-        if session_id not in self.meetings:
-            raise ValueError("Meeting not found")
-        if recorder_id not in self.meetings[session_id].tracks:
-            raise ValueError("Track not found")
-        return self.meetings[session_id].tracks[recorder_id].is_ready(speech_detector)
+        return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
 def callback(ch, method, properties, body):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
@@ -98,16 +110,25 @@ def callback(ch, method, properties, body):
     author = deserialized.get_author()
     timestamp = deserialized.get_timestamp()
     chunk = deserialized.get_chunk()
-    transcripts.add_chunk(session_id, recorder_id, chunk)
-    if transcripts.is_ready(session_id, recorder_id, speech_detector):
-        audio = transcripts.meetings[session_id].tracks[recorder_id].flush()
-        transcript, info = backend.transcribe(audio)
+    chunk = chunk.astype(np.float32)
+    contains_speech = speech_detector.detect_speech(chunk)
+    has_audio, audio = transcripts.add_chunk(session_id, recorder_id, chunk, contains_speech)
+    if has_audio:
+        logger.info("Transcribing audio")
+        transcript, info = backend.transcribe(audio, language="en")
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
+            print(segment)
             logger.info(f"Transcript {i}: {segment.text}")
         if len(utterance_text) > 0:
-            utterance = {"author": author, "utterance": utterance_text, "session_id": session_id}
+            utterance = {
+                "author": author,
+                "utterance": utterance_text,
+                "session_id": session_id,
+                "timestamp": str(timestamp)
+            }
+            print(utterance)
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
     logger.info(" [x] Received %r" % deserialized.get_session_id())

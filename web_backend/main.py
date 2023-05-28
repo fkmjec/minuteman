@@ -124,7 +124,13 @@ def transcribe(session_id):
 
     float_array = np.array(float_array)
     float_array = signal.resample(float_array, TARGET_SAMPLE_RATE)
-    chunk = audio_chunk.AudioChunk(session_id=session_id, recorder_id=recorder_id, chunk=float_array)
+    chunk = audio_chunk.AudioChunk(
+        session_id=session_id,
+        recorder_id=recorder_id,
+        chunk=float_array,
+        timestamp=timestamp,
+        author=author
+    )
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()
     channel.queue_declare("audio_chunk_queue")

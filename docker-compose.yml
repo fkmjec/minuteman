@@ -22,6 +22,7 @@ services:
     build: ./web_backend/transcription_worker
     environment:
       MOCK_ML_MODELS: "true"
+      WHISPER_MODEL: "base.en"
     command: python transcription_worker.py
     depends_on:
       - rabbitmq
@@ -76,6 +77,9 @@ services:
     image: rabbitmq
     volumes:
       - ./rabbitmq:/var/lib/rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
 
 volumes:
   db:

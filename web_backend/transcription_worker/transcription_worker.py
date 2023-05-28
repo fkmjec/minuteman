@@ -82,6 +82,13 @@ class TrackTranscriber:
         return audio
 
 class MeetingTranscriber:
+    """
+    A wrapper class for a meeting transcription. Currently, it has no significant functionality
+    beyond holding a dictionary of TrackTranscribers, one for each track in the meeting.
+    Ideally, it should keep a state of all the tracks and then create a transcript only when
+    all of them are ready and the utterances can be sorted by beginning time. This will
+    be implemented if there is time to do so.
+    """
     def __init__(self):
         self.tracks = {}
 
@@ -106,6 +113,7 @@ class Transcripts:
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
 def callback(ch, method, properties, body):
+    # TODO: move this handler function to a separate thread as not to block pika queues
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
     recorder_id = deserialized.get_recorder_id()
@@ -116,12 +124,12 @@ def callback(ch, method, properties, body):
     contains_speech = speech_detector.detect_speech(chunk)
     has_audio, audio = transcripts.add_chunk(session_id, recorder_id, chunk, contains_speech)
     if has_audio:
-        logger.info("Transcribing audio")
+        logger.debug("Transcribing audio")
         transcript, info = backend.transcribe(audio, language="en")
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
-            logger.info(f"Transcript {i}: {segment.text}")
+            logger.debug(f"Transcript {i}: {segment.text}")
         if len(utterance_text) > 0:
             utterance = {
                 "author": author,

@@ -23,6 +23,8 @@ MAX_PROB_THR = 0.95
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
+logging.basicConfig(level=logging.INFO)
+
 class SpeechDetector:
     def __init__(self, model_path):
         self.model = vad.SileroVADModel(model_path)
@@ -119,7 +121,6 @@ def callback(ch, method, properties, body):
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
-            print(segment)
             logger.info(f"Transcript {i}: {segment.text}")
         if len(utterance_text) > 0:
             utterance = {
@@ -128,7 +129,6 @@ def callback(ch, method, properties, body):
                 "session_id": session_id,
                 "timestamp": str(timestamp)
             }
-            print(utterance)
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
     logger.info(" [x] Received %r" % deserialized.get_session_id())

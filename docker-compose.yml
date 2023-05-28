@@ -1,8 +1,8 @@
 version: '3.9'
 
 services:
-  web-backend:
-    build: ./web_backend
+  flask-frontend:
+    build: ./flask_frontend
     environment:
       MOCK_ML_MODELS: "true"
       TORCH_BACKEND_URL: "http://torchserve:8084"
@@ -19,7 +19,7 @@ services:
       - 7777:7777
 
   trsc-worker:
-    build: ./web_backend/transcription_worker
+    build: ./transcription_worker
     environment:
       MOCK_ML_MODELS: "true"
       WHISPER_MODEL: "base.en"
@@ -49,7 +49,7 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - db:/var/lib/postgres/data
-      - ./web_backend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      - ./flask_frontend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
   etherpad:
     build: ./etherpad-lite

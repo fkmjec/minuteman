@@ -16,7 +16,7 @@ import json
 import time
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
-MAX_RABBITMQ_RETRIES = 20
+MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
 MAX_PROB_THR = 0.95

@@ -7,12 +7,13 @@ const padMessageHandler = require('ep_etherpad-lite/node/handler/PadMessageHandl
 const readOnlyManager = require('ep_etherpad-lite/node/db/ReadOnlyManager.js');
 const fetch = require('node-fetch');
 const apiUtils = require('./apiUtils');
+const { Utterance } = require('./utterance');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
 const amqplib = require('amqplib');
 
 
 const SEPARATOR_LINE_STR = "-----TRANSCRIPT SEPARATOR-----";
-const QUEUE = 'transcript_queue';
+const TRANSCRIPT_QUEUE = 'transcript_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
@@ -83,6 +84,18 @@ exports.collectContentPre = function(hook, context, cb){
     cb();
 }
 
+async function appendTranscript(trscObj) {
+    let sessionId = trscObj.sessionId;
+    sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
+    const trscPadId = sessionId + ".trsc";
+    const trscPad = await padManager.getPad(trscPadId);
+    // create the changeset together with the summary attribute (beware, pool must be passed too)
+    // append a newline as this cannot be done in the changeset
+    const utterance = `${trscObj.author}: ${trscObj.utterance}\n`;
+    await trscPad.appendText(utterance);
+    padMessageHandler.updatePadClients(trscPad);
+}
+
 async function connectToRabbitMQ() {
     let retries = 0;
     console.log("Connecting to rabbitmq server");
@@ -90,9 +103,10 @@ async function connectToRabbitMQ() {
         try {
             let connection = await amqplib.connect(RABBITMQ_ADDR);
             let channel = await connection.createChannel();
-            await channel.assertQueue(QUEUE);
-            channel.consume(QUEUE, (msg) => {
-                console.log(msg.content.toString());
+            await channel.assertQueue(TRANSCRIPT_QUEUE);
+            channel.consume(TRANSCRIPT_QUEUE, (msg) => {
+                const trscObj = new Utterance(msg.content);
+                appendTranscript(trscObj);
             });
             console.log("Successfully connected to rabbitmq")
             break;
@@ -212,6 +226,7 @@ exports.padUpdate = function(hook, context, cb) {
     // make a POST request to the minuteman API at process.env.MINUTEMAN_API_URL
     // with the pad id
     let apiUrl = process.env.MINUTEMAN_API_URL + "pad_change/" + context.pad.id;
+    console.info(apiUrl);
     // only call api if it was a human user who edited the document
     if (context.author) {
         fetch(apiUrl, {

@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 def callback(ch, method, properties, body):
     deserialized = json.loads(body)
     with open(args.record_to, 'a') as f:
-        f.write(body + '\n')
+        f.write(str(body) + '\n')
     logger.info(deserialized)
 
 if __name__ == "__main__":

@@ -20,6 +20,9 @@ const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
 const rabbitMQConnection = connectToRabbitMQ();
+
+// currently a tuple of (sesionId, string)
+let currentSummarizedTranscripts = {};
   
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -100,7 +103,7 @@ async function appendTranscript(trscObj) {
 }
 
 async function handleTranscriptChange(trscObj) {
-    rabbitMQConnection.sendToQueue(SUMMARY_INPUT_QUEUE, JSON.stringify(trscObj));
+    // rabbitMQConnection.sendToQueue(SUMMARY_INPUT_QUEUE, JSON.stringify(trscObj));
 }
 
 async function connectToRabbitMQ() {

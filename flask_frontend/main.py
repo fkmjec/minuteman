@@ -2,7 +2,6 @@ import logging
 import os
 import struct
 
-import api_interface
 import etherpad_interface
 import view_utils
 import text_utils
@@ -26,10 +25,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = app_config.db_url
 db.init_app(app)
 
 # initialize global interfaces with config from env vars
-# torch_interface = api_interface.TorchInterface(app_config)
 db_interface = DBInterface(app_config)
 editor_interface = etherpad_interface.PadInterface(app_config)
-# tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-xsum")
 
 # FIXME: this should be more structured
 gunicorn_logger = logging.getLogger('gunicorn.error')

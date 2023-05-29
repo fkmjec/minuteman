@@ -27,6 +27,15 @@ services:
     depends_on:
       - rabbitmq
   
+  summ-worker:
+    build: ./summarization_worker
+    environment:
+      MOCK_ML_MODELS: "true"
+      BART_MODEL: "bart-large-xsum"
+    command: python summarization_worker.py
+    depends_on:
+      - rabbitmq
+  
   # torchserve:
   #   build: ./torchserve_whisper
   #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar

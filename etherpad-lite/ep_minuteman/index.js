@@ -8,15 +8,18 @@ const readOnlyManager = require('ep_etherpad-lite/node/db/ReadOnlyManager.js');
 const fetch = require('node-fetch');
 const apiUtils = require('./apiUtils');
 const { Utterance } = require('./utterance');
+const { SummaryStore } = require('./store');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
 const amqplib = require('amqplib');
 
 
 const SEPARATOR_LINE_STR = "-----TRANSCRIPT SEPARATOR-----";
 const TRANSCRIPT_QUEUE = 'transcript_queue';
+const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
+const rabbitMQConnection = connectToRabbitMQ();
   
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -96,8 +99,13 @@ async function appendTranscript(trscObj) {
     padMessageHandler.updatePadClients(trscPad);
 }
 
+async function handleTranscriptChange(trscObj) {
+    rabbitMQConnection.sendToQueue(SUMMARY_INPUT_QUEUE, JSON.stringify(trscObj));
+}
+
 async function connectToRabbitMQ() {
     let retries = 0;
+    let connection = null;
     console.log("Connecting to rabbitmq server");
     while (true) {
         try {
@@ -107,7 +115,9 @@ async function connectToRabbitMQ() {
             channel.consume(TRANSCRIPT_QUEUE, (msg) => {
                 const trscObj = new Utterance(msg.content);
                 appendTranscript(trscObj);
+                handleTranscriptChange(trscObj);
             });
+            await channel.assertQueue(SUMMARY_INPUT_QUEUE);
             console.log("Successfully connected to rabbitmq")
             break;
         } catch (err) {
@@ -120,13 +130,13 @@ async function connectToRabbitMQ() {
             await sleep(1000);
         }
     }
+    return connection;
 }
 
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
     // try connecting to rabbitmq server with 20 retries
-    connectToRabbitMQ();
     args.app.post("/api/appendSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {
             new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
@@ -167,23 +177,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         padMessageHandler.updatePadClients(trscPad);
         res.json({ code: 0, message: "Success!"});
     });
-
-    // args.app.get("/api/getSummPoints", async (req, res) => {
-    //     const fields = req.query;
-
-    //     logger.info(fields);
-
-    //     if (!apiUtils.validateApiKey(fields, res)) return;
-    //     // sanitize pad id before continuing
-    //     // TODO: get padId from fields
-    //     const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
-    //     logger.info(padIdReceived);
-    //     const pad = await padManager.getPad(padIdReceived);
-    //     // TODO: go through all lines and get the ones where summary attributes are set
-        
-
-    //     res.json({ code: 0, message: "TODO!"});
-    // });
 
     args.app.post("/api/updateSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {

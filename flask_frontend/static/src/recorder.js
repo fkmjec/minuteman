@@ -28,6 +28,7 @@ function MeetingRecorder(jitsiConference, maxUtteranceLen) {
  * @param track the track potentially holding an audio stream
  */
 MeetingRecorder.prototype.addTrack = function(track) {
+    console.info("Adding track in MeetingRecorder");
     if (track.isAudioTrack()) {
         // create the track recorder
         const trackRecorder = new TrackRecorder(track, this.maxUtteranceLen);
@@ -53,6 +54,7 @@ MeetingRecorder.prototype.addTrack = function(track) {
  * @param {JitsiTrack} track the JitsiTrack to remove from the recording session
  */
 MeetingRecorder.prototype.removeTrack = function(track) {
+    console.info("Removing track in MeetingRecorder");
     if (track.isVideoTrack()) {
         return;
     }
@@ -90,8 +92,11 @@ MeetingRecorder.prototype.updateNames = function() {
             trackRecorder.name = 'Minuteman';
         } else {
             const id = trackRecorder.track.getParticipantId();
+            console.info(id);
             const participant = conference.getParticipantById(id);
+            console.info(participant);
             const newName = participant.getDisplayName();
+            console.info(newName);
 
             if (newName !== 'undefined') {
                 trackRecorder.name = newName;

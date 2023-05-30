@@ -69,12 +69,8 @@ class VoiceRecorder extends AudioWorkletProcessor {
 
 
     shouldSend() {
-        if (this.savedVoiceData.length === 0) {
-            return false;
-        }
-        const chunkLen = this.savedVoiceData[0].length;
-        const totalLen = this.savedVoiceData.length * chunkLen;
-        const lenInSec = totalLen / (this.sampleRate);
+        const totalLen = this.savedVoiceData.reduce((acc, chunk) => acc + chunk.length, 0);
+        const lenInSec = totalLen / (this.targetSampleRate);
         return lenInSec >= this.sentChunkLen;
     }
   
@@ -97,8 +93,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
             this.storeFloats(relevantData);
             if (this.shouldSend()) {
                 let merged = mergeChunks(this.savedVoiceData);
-                let resampled = this.converter.simple(merged);
-                this.port.postMessage({ type: "voiceData", data: resampled });
+                this.port.postMessage({ type: "voiceData", data: merged });
                 this.clearBuffer();
             }
         }

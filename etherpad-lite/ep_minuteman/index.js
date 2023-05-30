@@ -13,13 +13,13 @@ const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_eth
 const amqplib = require('amqplib');
 
 
-const SEPARATOR_LINE_STR = "-----TRANSCRIPT SEPARATOR-----";
 const TRANSCRIPT_QUEUE = 'transcript_queue';
 const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
 const rabbitMQConnection = connectToRabbitMQ();
+const summaryStore = new SummaryStore();
 
 // currently a tuple of (sesionId, string)
 let currentSummarizedTranscripts = {};
@@ -90,19 +90,40 @@ exports.collectContentPre = function(hook, context, cb){
     cb();
 }
 
-async function appendTranscript(trscObj) {
-    let sessionId = trscObj.sessionId;
+async function addUtteranceToPad(utterance) {
+    let sessionId = utterance.sessionId;
+    sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
+    const trscPadId = sessionId + ".trsc";
+    const trscPad = await padManager.getPad(trscPadId);
+    await trscPad.appendText(`${utterance.seq} ${utterance.utterance}`);
+    padMessageHandler.updatePadClients(trscPad);
+}
+
+async function addSummaryToPad(sessionId, summarySeq, text) {
+    sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
+    const summPadId = sessionId + ".summ";
+    const summPad = await padManager.getPad(summPadId);
+    await summPad.appendText(`${summarySeq}: ${text}\n`);
+}
+
+async function appendTranscript(utterance, utteranceSeq) {
+    let sessionId = utterance.sessionId;
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const trscPadId = sessionId + ".trsc";
     const trscPad = await padManager.getPad(trscPadId);
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
-    const utterance = `${trscObj.author}: ${trscObj.utterance}\n`;
-    await trscPad.appendText(utterance);
-    padMessageHandler.updatePadClients(trscPad);
+    const trscChunk = summaryStore.appendUtterance(utterance);
+    await addUtteranceToPad(utterance);
+    if (trscChunk) {
+        summaryStore.addSummary(trscChunk);
+        addSummaryToPad(sessionId, trscChunk.seq, "Summarization in progress");
+        // TODO send chunk for transcription
+    }
 }
 
 async function handleTranscriptChange(trscObj) {
+    // TODO
     // rabbitMQConnection.sendToQueue(SUMMARY_INPUT_QUEUE, JSON.stringify(trscObj));
 }
 
@@ -219,16 +240,7 @@ exports.expressCreateServer = function(hook, args, cb) {
 exports.padUpdate = function(hook, context, cb) {
     // TODO: give info to the minuteman Python API that it should update the summary if the pad is a transcript pad.
     // TODO: how to distinguish summary and transcript pads?
-    // make a POST request to the minuteman API at process.env.MINUTEMAN_API_URL
-    // with the pad id
-    let apiUrl = process.env.MINUTEMAN_API_URL + "pad_change/" + context.pad.id;
-    console.info(apiUrl);
     // only call api if it was a human user who edited the document
-    if (context.author) {
-        fetch(apiUrl, {
-            method: "POST",
-        })
-    }
     logger.info("padUpdate called!");
     cb(undefined);
 }

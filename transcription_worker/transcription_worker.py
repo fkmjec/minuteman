@@ -9,21 +9,29 @@ import faster_whisper
 
 import onnxruntime
 import numpy as np
-from mosestokenizer import MosesTokenizer
 from faster_whisper import vad
+import transformers
 import os
 import json
 import time
+import wave
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
+MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"] == "true"
+TOKENIZER = "facebook/bart-large-xsum"
 MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
-MAX_PROB_THR = 0.95
+MAX_PROB_THR = 0.9
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
 logging.basicConfig(level=logging.INFO)
+
+class TranscribableAudio:
+    def __init__(self, audio, seq):
+        self.audio = audio
+        self.seq = seq
 
 class SpeechDetector:
     def __init__(self, model_path):
@@ -91,13 +99,19 @@ class MeetingTranscriber:
     """
     def __init__(self):
         self.tracks = {}
+        self.seq = 0
 
     def add_chunk(self, recorder_id, chunk, contains_speech):
         if recorder_id not in self.tracks:
             self.tracks[recorder_id] = TrackTranscriber()
         has_audio, pushable_audio = self.tracks[recorder_id].update(chunk, contains_speech)
         # TODO: create transcriptions when the whole meeting is ready
-        return has_audio, pushable_audio
+        if has_audio:
+            transcribable_chunk = TranscribableAudio(pushable_audio, self.seq)
+            self.seq += 1
+            return transcribable_chunk
+        else:
+            return None
     
 class Transcripts:
     def __init__(self):
@@ -122,20 +136,22 @@ def callback(ch, method, properties, body):
     chunk = deserialized.get_chunk()
     chunk = chunk.astype(np.float32)
     contains_speech = speech_detector.detect_speech(chunk)
-    has_audio, audio = transcripts.add_chunk(session_id, recorder_id, chunk, contains_speech)
-    if has_audio:
+    transcribable_audio = transcripts.add_chunk(session_id, recorder_id, chunk, contains_speech)
+    if transcribable_audio is not None:
         logger.debug("Transcribing audio")
-        transcript, info = backend.transcribe(audio, language="en")
+        transcript, info = backend.transcribe(transcribable_audio.audio, language="en")
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
             logger.debug(f"Transcript {i}: {segment.text}")
+        utterance_text = f"{author}: {utterance_text}\n"
         if len(utterance_text) > 0:
             utterance = {
-                "author": author,
                 "utterance": utterance_text,
                 "session_id": session_id,
-                "timestamp": str(timestamp)
+                "timestamp": str(timestamp),
+                "seq": transcribable_audio.seq,
+                "token_count": len(tokenizer(utterance_text)["input_ids"])
             }
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
@@ -153,6 +169,7 @@ if __name__ == "__main__":
     backend.transcribe(np.zeros(1000, dtype=np.float32))
     logger.info("Loading speech detector")
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
+    tokenizer = transformers.BartTokenizer.from_pretrained(TOKENIZER)
     transcripts = Transcripts()
     retries = 0
     logger.info("Waiting for rabbitmq")

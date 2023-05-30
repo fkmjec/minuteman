@@ -22,7 +22,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
 
         // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
         this.maxUtteranceLen = maxUtteranceLen;
-        this.audioContext = new AudioContext({ sampleRate: 44100});
+        this.audioContext = new AudioContext();
 
         const originalStream = track.getOriginalStream();
         
@@ -42,7 +42,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
-                    targetSampleRate: this.audioContext.sampleRate, // TODO make this smaller and figure out decimation
+                    targetSampleRate: 16000, // TODO make this smaller and figure out decimation
                     sentChunkLen: SENT_CHUNK_LEN, // TODO constant
                 }
             });

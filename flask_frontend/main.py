@@ -117,7 +117,8 @@ def transcribe(session_id):
         float_array.append(float_value)
 
     float_array = np.array(float_array)
-    float_array = signal.resample(float_array, TARGET_SAMPLE_RATE)
+    # float_array = signal.resample_poly(float_array, TARGET_SAMPLE_RATE)
+    print(len(float_array))
     chunk = view_utils.create_audio_chunk(session_id, author, recorder_id, timestamp, float_array)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()

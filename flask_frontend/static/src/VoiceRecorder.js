@@ -1,3 +1,6 @@
+import { create, ConverterType } from "@alexanderolsen/libsamplerate-js";
+
+
 function mergeChunks(chunks) {
     const totalLen = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
     const merged = new Float32Array(totalLen);
@@ -9,21 +12,13 @@ function mergeChunks(chunks) {
     return merged;
 }
 
-function decimate(data, factor) {
-    // TODO: this is just a placeholder, we need to get a library for this
-    const decimated = new Float32Array(Math.floor(data.length / factor));
-    for (let i = 0; i < decimated.length; i++) {
-        const index = Math.floor(i * factor);
-        decimated[i] = data[i * factor];
-    }
-    return decimated;
-}
-
 class VoiceRecorder extends AudioWorkletProcessor {
     constructor(options) {
         super();
+
+
         this.savedVoiceData = [];
-        console.info(options);
+        this.converter = null;
         if (options && options.processorOptions) {
             this.sampleRate = options.processorOptions.sampleRate;
             this.targetSampleRate = options.processorOptions.targetSampleRate;
@@ -32,6 +27,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
         } else {
             throw new Error("options must be provided to Voice Recorder");
         }
+        this.createConverter()
 
         this.port.onmessage = (e) => {
             if (e == "stop") {
@@ -39,25 +35,35 @@ class VoiceRecorder extends AudioWorkletProcessor {
             }
         }
 
-        this.decimationFactor = this.sampleRate / this.targetSampleRate;
-        console.info(this.decimationFactor);
         this.utteranceStart = new Date();
         this.recording = true;
     }
 
+    decimate(data) {
+        return this.converter.full(data);
+    }
+    
+    async createConverter () {
+        console.info("creating converter");
+        let converterType = ConverterType.SRC_SINC_FASTEST;
+        let nChannels = 1;
+        this.converter = await create(nChannels, this.sampleRate, this.targetSampleRate, { converterType: converterType });
+        console.info("created converter");
+    }
+
     // data is a Float32Array
     storeFloats(data) {
-        const decimated = decimate(data, this.decimationFactor);
+        const decimated = this.decimate(data);
         this.savedVoiceData.push(decimated);
     }
 
     stopRecording() {
         this.recording = false;
+        this.converter.destroy();
         // TODO: maybe clean up all the buffers?
-        // this means that the VoiceRecorder will be removed
     }
 
-    clearBuffer(position) {
+    clearBuffer() {
         this.savedVoiceData = [];
     }
 
@@ -68,7 +74,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
         }
         const chunkLen = this.savedVoiceData[0].length;
         const totalLen = this.savedVoiceData.length * chunkLen;
-        const lenInSec = totalLen / (this.sampleRate /  this.decimationFactor);
+        const lenInSec = totalLen / (this.sampleRate);
         return lenInSec >= this.sentChunkLen;
     }
   
@@ -80,12 +86,19 @@ class VoiceRecorder extends AudioWorkletProcessor {
         if (inputList.length !== 1) {
             throw new Error("InputList should contain at least one input float array.");
         }
+
+        if (!this.converter) {
+            // wait with recorder until converter is ready
+            return this.recording;
+        }
+
         let relevantData = inputList[0][0];
         if (relevantData) {
             this.storeFloats(relevantData);
             if (this.shouldSend()) {
                 let merged = mergeChunks(this.savedVoiceData);
-                this.port.postMessage({ type: "voiceData", data: merged });
+                let resampled = this.converter.simple(merged);
+                this.port.postMessage({ type: "voiceData", data: resampled });
                 this.clearBuffer();
             }
         }

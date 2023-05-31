@@ -104,6 +104,19 @@ async function addSummaryToPad(sessionId, summarySeq, text) {
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
     await summPad.appendText(`${summarySeq}: ${text}\n`);
+    padMessageHandler.updatePadClients(trscPad);
+}
+
+async function sendChunkToSummarize(sessionId, summarySeq, text) {
+    const chunk = {
+        sessionId: sessionId,
+        summarySeq: summarySeq,
+        text: text
+    };
+    const channel = await rabbitMQConnection.createChannel();
+    await channel.assertQueue(SUMMARY_INPUT_QUEUE);
+    await channel.sendToQueue(SUMMARY_INPUT_QUEUE, Buffer.from(JSON.stringify(chunk)));
+    channel.close();
 }
 
 async function appendTranscript(utterance, utteranceSeq) {
@@ -116,7 +129,7 @@ async function appendTranscript(utterance, utteranceSeq) {
     const trscChunk = summaryStore.appendUtterance(utterance);
     await addUtteranceToPad(utterance);
     if (trscChunk) {
-        summaryStore.addSummary(trscChunk);
+        summaryStore.addSummary(utterance.sessionId, trscChunk.seq, trscChunk);
         addSummaryToPad(sessionId, trscChunk.seq, "Summarization in progress");
         // TODO send chunk for transcription
     }

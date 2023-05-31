@@ -67,8 +67,8 @@ class SummarySession {
     }
 
     addSummary (id, summary) {
-        const summaryObj = new Summary(id, content);
-        this.summaries[summary.id] = summaryObj;
+        const summaryObj = new Summary(id, summary);
+        this.summaries[id] = summaryObj;
     }
 
     freeze (id) {

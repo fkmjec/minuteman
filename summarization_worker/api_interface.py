@@ -8,11 +8,12 @@ TRANSCRIBE_MODEL_NAME = "whisper"
 
 # the class to hold config and create requests for the underlying TorchServe backend
 class TorchInterface:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, torch_backend_url, mock_ml_models):
+        self.torch_backend_url = torch_backend_url
+        self.mock_ml_models = mock_ml_models
 
     def _construct_model_address(self, model_name):
-        return urllib.parse.urljoin(self.config.torch_backend_url, "predictions/" + model_name)
+        return urllib.parse.urljoin(self.torch_backend_url, "predictions/" + model_name)
     
     def _prepare_request_data_files(self, model_input_string):
         files = {'data': ('model_input.txt', model_input_string)}
@@ -24,7 +25,7 @@ class TorchInterface:
         trsc = trsc.raw_str()
         files = self._prepare_request_data_files(trsc)
         summ_addr = self._construct_model_address(SUMM_MODEL_NAME)
-        if self.config.mock_ml_models:
+        if self.mock_ml_models:
             logging.debug(f"Summarization req to {summ_addr} mocked!")
             return "Summary mock!"
         else:
@@ -41,7 +42,7 @@ class TorchInterface:
     def _transcribe_audio(self, audio_data):
         files = self._prepare_request_data_audio(audio_data)
         transcription_addr = self._construct_model_address(TRANSCRIBE_MODEL_NAME)
-        if self.config.mock_ml_models:
+        if self.mock_ml_models:
             logging.debug(f"Transcription to {transcription_addr} mocked!")
             return "Transcript mock!"
         else:

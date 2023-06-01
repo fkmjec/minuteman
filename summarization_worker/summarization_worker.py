@@ -2,9 +2,13 @@ import logging
 import time
 import pika
 import json
+import os
+import api_interface
 
 MAX_RETRIES = 200
 INPUT_QUEUE_NAME = "summary_input_queue"
+TORCH_BACKEND_URL = os.environ["TORCH_BACKEND_URL"]
+MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"]
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,6 +33,7 @@ if __name__ == "__main__":
             retries += 1
             time.sleep(1)
     logger.info("Connected to rabbitmq")
+    torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
     channel = connection.channel()
     channel.queue_declare(INPUT_QUEUE_NAME, durable=True)
     channel.basic_consume(queue=INPUT_QUEUE_NAME, on_message_callback=callback, auto_ack=True)

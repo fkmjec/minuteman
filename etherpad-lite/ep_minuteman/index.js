@@ -1,69 +1,31 @@
 const AttributePool = require('ep_etherpad-lite/static/js/AttributePool');
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
-const {Formidable} = require('formidable');
 const padManager = require('ep_etherpad-lite/node/db/PadManager');
 const Pad = require('ep_etherpad-lite/node/db/Pad');
 const padMessageHandler = require('ep_etherpad-lite/node/handler/PadMessageHandler');
 const readOnlyManager = require('ep_etherpad-lite/node/db/ReadOnlyManager.js');
-const fetch = require('node-fetch');
 const apiUtils = require('./apiUtils');
 const { Utterance } = require('./utterance');
 const { SummaryStore } = require('./store');
+const ChangesetUtils = require('./ChangesetUtils');
+const TranscriptUtils = require('./TranscriptUtils');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
 const amqplib = require('amqplib');
-
 
 const TRANSCRIPT_QUEUE = 'transcript_queue';
 const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
-const rabbitMQConnection = connectToRabbitMQ();
 const summaryStore = new SummaryStore();
+let rabbitMQConnection = null;
 
-// currently a tuple of (sesionId, string)
-let currentSummarizedTranscripts = {};
+init();
   
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}
-
-// generate a changeset for a summary line. This includes saving the proper
-// attributes. We presume the text has been cleaned before.
-function getSummaryLineAppendChs(pad, newText, summaryId) {
-    const oldText = Pad.cleanText(pad.text());
-    const text = Pad.cleanText(newText);
-    const attribs = [[ "summary", summaryId]];
-    const changeset = Changeset.makeSplice(oldText, oldText.length, 0, text, attribs, pad.pool);
-    return changeset;
-}
-
-function getSummaryLineChangeChs(pad, newText, summaryId, pool) {
-    const atext = pad.atext;
-    var opIter = Changeset.opIterator(pad.atext.attribs);
-    // FIXME: is this needed?
-    let oldText = Pad.cleanText(pad.text());
-    const text = Pad.cleanText(newText);
-    let charsBefore = 0;
-
-    while (opIter.hasNext()) {
-        // we can use the opIterator to get attributes for each line, but can we get where the revision starts and ends?
-        // get line contents for iterator
-        var op = opIter.next();
-        header = Changeset.opAttributeValue(op, 'summary', pad.pool);
-        if (header === summaryId) {
-            let attribs = [[ "summary", summaryId]];
-            // logger.info(f`chars before: ${op.charsBefore} chars for point${logger.chars}`);
-            let changeset = Changeset.makeSplice(oldText, charsBefore, op.chars, text, attribs, pad.pool);
-            changeset.app
-            return changeset;
-        } else {
-            charsBefore += op.chars;
-        }
-    }
-    throw new Error("Summary point not found!");
 }
 
 exports.padCreate = function(hook, context, cb){
@@ -86,7 +48,8 @@ async function addUtteranceToPad(utterance) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const trscPadId = sessionId + ".trsc";
     const trscPad = await padManager.getPad(trscPadId);
-    await trscPad.appendText(`${utterance.seq} ${utterance.utterance}`);
+    const appendChs = ChangesetUtils.getUtteranceAppendChs(trscPad, utterance);
+    await trscPad.appendRevision(appendChs);
     padMessageHandler.updatePadClients(trscPad);
 }
 
@@ -95,7 +58,7 @@ async function addSummaryToPad(sessionId, summarySeq, text) {
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
     await summPad.appendText(`${summarySeq}: ${text}\n`);
-    padMessageHandler.updatePadClients(trscPad);
+    padMessageHandler.updatePadClients(summPad);
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text) {
@@ -114,6 +77,7 @@ async function appendTranscript(utterance) {
     let sessionId = utterance.sessionId;
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const trscPadId = sessionId + ".trsc";
+    const trscPad = await padManager.getPad(trscPadId);
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
     const trscChunk = summaryStore.appendUtterance(utterance);
@@ -121,7 +85,8 @@ async function appendTranscript(utterance) {
     if (trscChunk) {
         summaryStore.addSummary(utterance.sessionId, trscChunk.seq, trscChunk);
         addSummaryToPad(sessionId, trscChunk.seq, "Summarization in progress");
-        // TODO send chunk for transcription
+        const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
+        sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
     }
 }
 
@@ -132,7 +97,6 @@ async function handleTranscriptChange(trscObj) {
 
 async function connectToRabbitMQ() {
     let retries = 0;
-    let connection = null;
     console.log("Connecting to rabbitmq server");
     while (true) {
         try {
@@ -142,11 +106,10 @@ async function connectToRabbitMQ() {
             channel.consume(TRANSCRIPT_QUEUE, (msg) => {
                 const trscObj = new Utterance(msg.content);
                 appendTranscript(trscObj);
-                handleTranscriptChange(trscObj);
             });
             await channel.assertQueue(SUMMARY_INPUT_QUEUE);
             console.log("Successfully connected to rabbitmq")
-            break;
+            return connection;
         } catch (err) {
             console.error(err);
             retries += 1;
@@ -157,12 +120,17 @@ async function connectToRabbitMQ() {
             await sleep(1000);
         }
     }
-    return connection;
+}
+
+async function init() {
+    // initialize the global connection object for usage
+    rabbitMQConnection = await connectToRabbitMQ();
 }
 
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
+    cb();
 }
 
 exports.padUpdate = function(hook, context, cb) {
@@ -179,7 +147,7 @@ exports.getLineHTMLForExport = function (hook, context) {
     if (header) {
         context.lineContent = "<span class=\"summary " + header + "\">" + context.lineContent + "</span>";
     } /* else {
-        context.lineContent = "<span class=\"summary user\">" + context.lineContent + "</span>";
+        context.lineContent = "<span class=\"summarser\">" + context.lineContent + "</span>";
     } */
     return context.lineContent;
   }

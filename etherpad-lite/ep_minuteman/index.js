@@ -66,15 +66,6 @@ function getSummaryLineChangeChs(pad, newText, summaryId, pool) {
     throw new Error("Summary point not found!");
 }
 
-function getTrscSeparatorChs(pad, charNum, trscId, pool) {
-    let oldText = Pad.cleanText(pad.text());
-    // FIXME: can this handle the newline?
-    // TODO: add correspondence with the summary point id
-    let text = "\n" + SEPARATOR_LINE_STR + "\n";
-    const changeset = Changeset.makeSplice(oldText, charNum, 0, text);
-    return changeset;
-}
-
 exports.padCreate = function(hook, context, cb){
     const apool = new AttributePool();
     const builder = Changeset.builder(1, apool);
@@ -119,11 +110,10 @@ async function sendChunkToSummarize(sessionId, summarySeq, text) {
     channel.close();
 }
 
-async function appendTranscript(utterance, utteranceSeq) {
+async function appendTranscript(utterance) {
     let sessionId = utterance.sessionId;
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const trscPadId = sessionId + ".trsc";
-    const trscPad = await padManager.getPad(trscPadId);
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
     const trscChunk = summaryStore.appendUtterance(utterance);
@@ -173,81 +163,6 @@ async function connectToRabbitMQ() {
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
-    // try connecting to rabbitmq server with 20 retries
-    args.app.post("/api/appendSumm", async (req, res) => {
-        const fields = await new Promise((resolve, reject) => {
-            new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
-        });
-        logger.info("appendSumm called!");
-
-        if (!apiUtils.validateApiKey(fields, res)) return;
-        // sanitize pad id before continuing
-        const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
-        const trscPadId = padIdReceived.slice(0, -4) + "trsc";
-        let data;
-        try {
-            logger.info(fields);
-            data = JSON.parse(fields.data);
-        } catch (err) {
-            logger.error(err);
-            res.json({ code:1 , message: "data must be in JSON format"});
-            return;
-        }
-        const pad = await padManager.getPad(padIdReceived);
-        const trscPad = await padManager.getPad(trscPadId);
-        
-        // create the changeset together with the summary attribute (beware, pool must be passed too)
-        // append a newline as this cannot be done in the changeset
-        logger.info(data);
-        await pad.appendText("\n");
-        const changeset = getSummaryLineAppendChs(pad, data.text, data.id);
-        await pad.appendRevision(changeset);
-
-        // FIXME: make this one revision
-        const trscChangesetPre = getTrscSeparatorChs(trscPad, data.preTrsc, data.id);
-        const addedLen = SEPARATOR_LINE_STR.length + 2;
-        await trscPad.appendRevision(trscChangesetPre);
-        const trscChangesetPost = getTrscSeparatorChs(trscPad, data.postTrsc + addedLen, data.id);
-        await trscPad.appendRevision(trscChangesetPost);
-        logger.info(pad);
-        padMessageHandler.updatePadClients(pad);
-        padMessageHandler.updatePadClients(trscPad);
-        res.json({ code: 0, message: "Success!"});
-    });
-
-    args.app.post("/api/updateSumm", async (req, res) => {
-        const fields = await new Promise((resolve, reject) => {
-            new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
-        });
-
-        logger.info(fields);
-
-        if (!apiUtils.validateApiKey(fields, res)) return;
-        // sanitize pad id before continuing
-        const padIdReceived = (await readOnlyManager.getIds(apiUtils.sanitizePadId(fields.padID))).padId;
-        let data;
-        try {
-            data = JSON.parse(fields.data);
-        } catch (err) {
-            res.json({ code:1 , message: "data must be in JSON format"});
-            return;
-        }
-        const pad = await padManager.getPad(padIdReceived);
-        // TODO: update summary field with the given id
-        // TODO: probably create a changeset for the exact attributed line
-        try {
-            const changeset = getSummaryLineChangeChs(pad, data.text, data.id);
-            await pad.appendRevision(changeset);
-            padMessageHandler.updatePadClients(pad);
-        } catch (err) {
-            logger.error(err);
-            res.json({ code: 1, message: err.message});
-            return;
-        }
-        res.json({ code: 0, message: "Success!"});
-    });
-
-    cb();
 }
 
 exports.padUpdate = function(hook, context, cb) {

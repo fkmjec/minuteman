@@ -1,5 +1,17 @@
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
 
+function getTrscSeqNum(alineAttrs, apool) {
+    var header = null;
+    if (alineAttrs) {
+        var opIter = Changeset.opIterator(alineAttrs);
+        if (opIter.hasNext()) {
+            var op = opIter.next();
+            header = Changeset.opAttributeValue(op, 'trsc_seq', apool);
+        }
+    }
+    return header;
+  }
+
 /**
  * Select the transcript between the given start and end sequence numbers. If
  * the sequence numbers are not found in the transcript, the function takes
@@ -17,6 +29,7 @@ exports.getTrscSegment = function (pad, start, end) {
     const attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
     console.info(attribLines);
     for (const line of attribLines) {
+        console.info(`seq: ${getTrscSeqNum(line, apool)}`);
         console.info(line);
     }
     return "TODO not implemented hehe"

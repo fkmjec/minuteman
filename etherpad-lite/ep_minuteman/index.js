@@ -146,22 +146,6 @@ exports.getLineHTMLForExport = function (hook, context) {
     logger.info(header);
     if (header) {
         context.lineContent = "<span class=\"summary " + header + "\">" + context.lineContent + "</span>";
-    } /* else {
-        context.lineContent = "<span class=\"summarser\">" + context.lineContent + "</span>";
-    } */
-    return context.lineContent;
-  }
-  
-  function _analyzeLine(alineAttrs, apool) {
-    var header = null;
-    if (alineAttrs) {
-        var opIter = Changeset.opIterator(alineAttrs);
-        if (opIter.hasNext()) {
-            var op = opIter.next();
-            logger.info(op);
-            header = Changeset.opAttributeValue(op, 'summary', apool);
-            logger.info(header);
-        }
     }
-    return header;
-  }
+    return context.lineContent;
+}

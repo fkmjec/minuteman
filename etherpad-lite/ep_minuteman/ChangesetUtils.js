@@ -1,52 +1,117 @@
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
 const Pad = require('ep_etherpad-lite/node/db/Pad');
 
+function serializeTrscSeq(seq) {
+    return `trsc_${seq}`;
+}
+
+function deserializeTrscSeq(str) {
+    return parseInt(str.split('_')[1]);
+}
+
+function serializeSummSeq(seq) {
+    return `summ_${seq}`;
+}
+
+function deserializeSummSeq(str) {
+    return parseInt(str.split('_')[1]);
+}
+
+function appendWithAttribs(pad, text, attribs) {
+    const oldText = Pad.cleanText(pad.text());
+    const cleanText = Pad.cleanText(text);
+    const changeset = Changeset.makeSplice(oldText, oldText.length, 0, cleanText, attribs, pad.pool);
+    return changeset;
+}
+
+exports.zip = function (a, b) {
+    return a.map((k, i) => [k, b[i]]);
+}
+
+/**
+ * Get an attribute value for a document line
+ * @param {*} alineAttrs the document line's attributes
+ * @param {*} apool the attribute pool
+ * @param {*} attribKey the attribute key to check for
+ * @returns the attribute value or null if not found
+ */
+exports.getLineAttributeValue = function(alineAttrs, apool, attribKey) {
+    var header = null;
+    if (alineAttrs) {
+        var opIter = Changeset.opIterator(alineAttrs);
+        if (opIter.hasNext()) {
+            var op = opIter.next();
+            header = Changeset.opAttributeValue(op, attribKey, apool);
+        }
+    }
+    return header;
+}
+
+/**
+ * Extracts the trsc seq from a given line.
+ * @param {*} alineAttrs 
+ * @param {*} apool 
+ * @returns the trsc sequence number or null if not found
+ */
+exports.getTrscLineSeq = function(alineAttrs, apool) {
+    const seq = exports.getLineAttributeValue(alineAttrs, apool, "trsc_seq");
+    if (seq) {
+        return deserializeTrscSeq(seq);
+    }
+    return null;
+}
+
+/**
+ * Extracst the summary seq from a given line.
+ * @param {*} alineAttrs 
+ * @param {*} apool 
+ * @returns the summary sequence number or null if not found
+ */
+exports.getSummLineSeq = function(alineAttrs, apool) {
+    const seq = exports.getLineAttributeValue(alineAttrs, apool, "summary_seq");
+    if (seq) {
+        return deserializeSummSeq(seq);
+    }
+    return null;
+}
+
 /**
  * Create a changeset for appended summary line, analogous to getUtteranceAppendChs
  * @param {*} pad The pad to append to
  * @param {*} summaryText the summary text
- * @param {*} summaryId the summary id that is stored as attribute
+ * @param {*} summarySeq the summary id that is stored as attribute
  * @returns the appending changeset
  */
-exports.getSummaryLineAppendChs = function(pad, summaryText, summaryId) {
-    const oldText = Pad.cleanText(pad.text());
-    const text = Pad.cleanText(summaryText);
-    const attribs = [[ "summary_id", summaryId]];
-    const changeset = Changeset.makeSplice(oldText, oldText.length, 0, text, attribs, pad.pool);
-    return changeset;
+exports.getSummaryAppendChs = function(pad, summarySeq, summaryText) {
+    return appendWithAttribs(pad, summaryText, [[ "summary_seq", serializeSummSeq(summarySeq) ]]);
 }
 
 /**
- * 
- * @param {*} pad 
- * @param {*} newSummaryText 
- * @param {*} summaryId 
- * @param {*} pool 
- * @returns 
+ * Create a changeset for updating a certain summary line
+ * @param {*} pad the pad to update the summary line in
+ * @param {*} newSummaryText the new summary content
+ * @param {*} summarySeq the summary sequence number (the identifier)
+ * @returns the changeset that replaces the old summary content with new
  */
-exports.getSummaryLineChangeChs = function(pad, newSummaryText, summaryId, pool) {
+exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
     const atext = pad.atext;
-    var opIter = Changeset.opIterator(pad.atext.attribs);
     // FIXME: is this cleaning needed?
-    let oldText = Pad.cleanText(pad.text());
-    const text = Pad.cleanText(newSummaryText);
+    const apool = pad.apool();
+    let oldText = pad.text();
+    const text = newSummaryText;
     let charsBefore = 0;
-
-    while (opIter.hasNext()) {
-        // we can use the opIterator to get attributes for each line, but can we get where the revision starts and ends?
-        // get line contents for iterator
-        var op = opIter.next();
-        header = Changeset.opAttributeValue(op, 'summary', pad.pool);
-        if (header === summaryId) {
-            let attribs = [[ "summary", summaryId]];
-            // logger.info(f`chars before: ${op.charsBefore} chars for point${logger.chars}`);
-            let changeset = Changeset.makeSplice(oldText, charsBefore, op.chars, text, attribs, pad.pool);
-            changeset.app
-            return changeset;
-        } else {
-            charsBefore += op.chars;
+    const textLines = atext.text.slice(0, -1).split('\n');
+    const attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
+    for (const [attribLine, textLine] of exports.zip(attribLines, textLines)) {
+        const candidateId = exports.getSummLineSeq(attribLine, apool);
+        if (candidateId === summarySeq) {
+            const charsToRemove = textLine.length;
+            const attribs = [[ "summary_seq", serializeSummSeq(summarySeq)]];
+            return Changeset.makeSplice(oldText, charsBefore, charsToRemove, newSummaryText, attribs, pad.pool);
         }
+        charsBefore += textLine.length + 1;
     }
+    // FIXME: this can happen and should not be a fatal error
     throw new Error("Summary point not found!");
 }
 
@@ -57,10 +122,5 @@ exports.getSummaryLineChangeChs = function(pad, newSummaryText, summaryId, pool)
  * @returns Changeset to apply to pad
  */
 exports.getUtteranceAppendChs = function(pad, utterance) {
-    // FIXME: how do I make this atomic? I probably can't
-    const oldText = Pad.cleanText(pad.text());
-    const text = Pad.cleanText(utterance.utterance);
-    const attribs = [[ "trsc_seq", utterance.seq]];
-    const changeset = Changeset.makeSplice(oldText, oldText.length, 0, text, attribs, pad.pool);
-    return changeset;
+    return appendWithAttribs(pad, utterance.utterance, [[ "trsc_seq", serializeTrscSeq(utterance.seq)]]);
 }

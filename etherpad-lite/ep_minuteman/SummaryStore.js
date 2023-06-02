@@ -1,3 +1,4 @@
+// TODO: move this to config somewhere
 MAX_TOKEN_LEN = 512;
 
 class TranscriptChunk {
@@ -94,19 +95,19 @@ class SummaryStore {
         return possibleChunk;
     }
 
-    addSummary (sessionId, summaryId, content) {
+    addSummary (sessionId, summarySeq, content) {
         if (!this.sessions[sessionId]) {
             this.sessions[sessionId] = new SummarySession();
         }
-        this.sessions[sessionId].addSummary(summaryId, content);
+        this.sessions[sessionId].addSummary(summarySeq, content);
     }
 
-    freeze (sessionId, summaryId) {
-        this.sessions[sessionId].freeze(summaryId);
+    freeze (sessionId, summarySeq) {
+        this.sessions[sessionId].freeze(summarySeq);
     }
 
-    isFrozen (sessionId, summaryId) {
-        return this.sessions[sessionId].isFrozen(summaryId);
+    isFrozen (sessionId, summarySeq) {
+        return this.sessions[sessionId].isFrozen(summarySeq);
     }
 }
 

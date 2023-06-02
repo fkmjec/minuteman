@@ -14,6 +14,7 @@ const amqplib = require('amqplib');
 
 const TRANSCRIPT_QUEUE = 'transcript_queue';
 const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
+const SUMMARY_RESULT_QUEUE = 'summary_result_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 MAX_RABBITMQ_RETRIES = 20;
 
@@ -57,14 +58,27 @@ async function addSummaryToPad(sessionId, summarySeq, text) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
-    await summPad.appendText(`${summarySeq}: ${text}\n`);
+    const appendChs = ChangesetUtils.getSummaryAppendChs(summPad, summarySeq, text);
+    await summPad.appendRevision(appendChs);
+    padMessageHandler.updatePadClients(summPad);
+}
+
+async function updateSummaryInPad(sessionId, summarySeq, text) {
+    sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
+    const summPadId = sessionId + ".summ";
+    const summPad = await padManager.getPad(summPadId);
+    const updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text);
+    if (!updateChs) {
+        return;
+    }
+    await summPad.appendRevision(updateChs);
     padMessageHandler.updatePadClients(summPad);
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text) {
     const chunk = {
-        sessionId: sessionId,
-        summarySeq: summarySeq,
+        session_id: sessionId,
+        summary_seq: summarySeq,
         text: text
     };
     const channel = await rabbitMQConnection.createChannel();
@@ -84,9 +98,14 @@ async function appendTranscript(utterance) {
     await addUtteranceToPad(utterance);
     if (trscChunk) {
         summaryStore.addSummary(utterance.sessionId, trscChunk.seq, trscChunk);
-        addSummaryToPad(sessionId, trscChunk.seq, "Summarization in progress");
+        // wait for the summary to be present in the pad so that it can be then asynchronously replaced
+        utterance = {
+            sessionId: sessionId,
+
+        }
+        await addSummaryToPad(sessionId, trscChunk.seq, `${trscChunk.seq}: Summarization in progress\n`);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
-        sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
+        await sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
     }
 }
 
@@ -103,11 +122,17 @@ async function connectToRabbitMQ() {
             let connection = await amqplib.connect(RABBITMQ_ADDR);
             let channel = await connection.createChannel();
             await channel.assertQueue(TRANSCRIPT_QUEUE);
+            await channel.assertQueue(SUMMARY_INPUT_QUEUE);
+            await channel.assertQueue(SUMMARY_RESULT_QUEUE);
             channel.consume(TRANSCRIPT_QUEUE, (msg) => {
                 const trscObj = new Utterance(msg.content);
                 appendTranscript(trscObj);
             });
-            await channel.assertQueue(SUMMARY_INPUT_QUEUE);
+
+            channel.consume(SUMMARY_RESULT_QUEUE, (msg) => {
+                const summaryObj = JSON.parse(msg.content);
+                updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
+            });
             console.log("Successfully connected to rabbitmq")
             return connection;
         } catch (err) {

@@ -4,7 +4,6 @@ import struct
 
 import etherpad_interface
 import view_utils
-import text_utils
 import config
 from models import DBInterface
 from flask import Flask, jsonify, render_template, request, redirect, url_for, abort

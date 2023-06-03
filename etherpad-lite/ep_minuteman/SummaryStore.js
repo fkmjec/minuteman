@@ -114,7 +114,7 @@ class SummaryStore {
     /**
      * Adds a summary to the store
      * @param {*} sessionId the session in which the summary was created
-     * @param {*} trscChunk the transcript chunk that contains the input transcript chunk
+     * @param {*} trscChunk the transcript chunk that contains the input transcript segment
      * @param {*} summaryContent the content of the summary
      */
     addSummary (sessionId, trscChunk, summaryContent) {
@@ -142,6 +142,9 @@ class SummaryStore {
      * @returns a list of summaries to update
      */
     updateTrsc (sessionId, pad) {
+        if (!this.sessions[sessionId]) {
+            this.sessions[sessionId] = new SummarySession();
+        }
         const session = this.sessions[sessionId];
         const summaries = session.summaries;
         const summariesToUpdate = [];

@@ -11,7 +11,6 @@ from forms import TranscriptInputForm
 from extensions import db
 import numpy as np
 import pika
-from scipy import signal
 
 TARGET_SAMPLE_RATE = 16000
 SRC_SAMPLE_RATE = 44100.0

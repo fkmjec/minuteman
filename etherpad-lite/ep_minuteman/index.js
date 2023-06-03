@@ -106,11 +106,6 @@ async function appendTranscript(utterance) {
     }
 }
 
-async function handleTranscriptChange(trscObj) {
-    // TODO
-    // rabbitMQConnection.sendToQueue(SUMMARY_INPUT_QUEUE, JSON.stringify(trscObj));
-}
-
 async function connectToRabbitMQ() {
     let retries = 0;
     console.log("Connecting to rabbitmq server");

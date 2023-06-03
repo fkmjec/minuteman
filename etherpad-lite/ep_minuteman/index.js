@@ -75,11 +75,12 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
     padMessageHandler.updatePadClients(summPad);
 }
 
-async function sendChunkToSummarize(sessionId, summarySeq, text) {
+async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = false) {
     const chunk = {
         session_id: sessionId,
         summary_seq: summarySeq,
-        text: text
+        text: text,
+        user_edit: user_edit
     };
     const channel = await rabbitMQConnection.createChannel();
     await channel.assertQueue(SUMMARY_INPUT_QUEUE);
@@ -97,14 +98,10 @@ async function appendTranscript(utterance) {
     const trscChunk = summaryStore.appendUtterance(utterance);
     await addUtteranceToPad(utterance);
     if (trscChunk) {
-        summaryStore.addSummary(utterance.sessionId, trscChunk.seq, trscChunk);
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        utterance = {
-            sessionId: sessionId,
-
-        }
         await addSummaryToPad(sessionId, trscChunk.seq, `${trscChunk.seq}: Summarization in progress\n`);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
+        summaryStore.addSummary(utterance.sessionId, trscChunk);
         await sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
     }
 }
@@ -159,11 +156,18 @@ exports.expressCreateServer = function(hook, args, cb) {
 }
 
 exports.padUpdate = function(hook, context, cb) {
-    // TODO: give info to the minuteman Python API that it should update the summary if the pad is a transcript pad.
-    // TODO: how to distinguish summary and transcript pads?
-    // only call api if it was a human user who edited the document
     logger.info("padUpdate called!");
-    cb(undefined);
+    // either edited by the plugin or the pad is not a transcript pad
+    if (context.pad.id.slice(-5) !== ".trsc" || !context.author) {
+        cb();
+        return;
+    }
+    const sessionId = context.pad.id.slice(0, -5); 
+    const toSummarize = summaryStore.updateTrsc(sessionId, context.pad);
+    for (const summary of toSummarize) {
+        sendChunkToSummarize(sessionId, summary.seq, summary.source, true);
+    }
+    cb();
 }
 
 exports.getLineHTMLForExport = function (hook, context) {

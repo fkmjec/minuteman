@@ -3,20 +3,26 @@
 
 {% block main %}
 <script src="{{ url_for('static', filename='dist/main.js') }}"></script>
-<div class="jitsi">
-    <a href="#" onclick="transcriber.unload()">Disconnect</a>
-    <div id="audioOutputSelectWrapper">
-        <input id="roomSelect" ></input>
-        <input type="button" value="Select room" onclick="transcriber.onRoomSelect()" />
-    </div>
+<div class="control-bar">
+    <ul class="control-bar-contents">
+        <li class="control-bar-item">
+            Minuteman
+        </li>
+        <li class="control-bar-item">
+            <input id="roomSelect" ></input>
+            <input type="button" value="Select room" onclick="transcriber.onRoomSelect()" />
+            <input type="button" value="Disconnect" onclick="transcriber.unload()"/>
+        </li>
+        <li class="control-bar-item">
+        </li>
+    </ul>
 </div>
-<h1>Minuteman</h1>
 <div class="editors">
-    <div class="transcript-window">
-        <iframe class="transcript-iframe" src="http://localhost:9001/p/{{ session_id }}.trsc"></iframe>
+    <div class="transcript-window editor">
+        <iframe class="editor-iframe transcript-iframe" src="http://localhost:9001/p/{{ session_id }}.trsc"></iframe>
     </div>
-    <div class="summary-window">
-        <iframe class="summary-iframe" src="http://localhost:9001/p/{{ session_id }}.summ"></iframe>
+    <div class="summary-window editor">
+        <iframe class="editor-iframe summary-iframe" src="http://localhost:9001/p/{{ session_id }}.summ"></iframe>
     </div>
 </div>
 

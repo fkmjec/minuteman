@@ -1,0 +1,44 @@
+html, body {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+}
+
+.control-bar {
+    display: flex;
+    width: 100%;
+    background-color: #e47575;
+}
+
+.control-bar-contents {
+    list-style-type: none;
+}
+
+.control-bar-item {
+    display: block;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    float: left;
+}
+
+.editor-iframe {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.editors {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+      
+.editor {
+    flex: 50%;
+    display:flex;
+    height: 100%;
+    width:100%;
+} 

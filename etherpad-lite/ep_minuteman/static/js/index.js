@@ -23,7 +23,6 @@ exports.collectContentPre = function (hookName, context, cb) {
 
 function sendSummaryRequest(sessionId, start, end) {
     let data = new FormData();
-    // FIXME: make this crap readable in a function somewhere
     data.append('start', start);
     data.append('end', end);
     data.append("session_id", sessionId);

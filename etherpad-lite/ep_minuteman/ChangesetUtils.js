@@ -1,4 +1,5 @@
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
+
 const Pad = require('ep_etherpad-lite/node/db/Pad');
 
 function serializeTrscSeq(seq) {
@@ -41,7 +42,10 @@ exports.getLineAttributeValue = function(alineAttrs, apool, attribKey) {
         var opIter = Changeset.opIterator(alineAttrs);
         if (opIter.hasNext()) {
             var op = opIter.next();
-            header = Changeset.opAttributeValue(op, attribKey, apool);
+            const newHeader = Changeset.opAttributeValue(op, attribKey, apool);
+            if (newHeader) {
+                header = newHeader;
+            }
         }
     }
     return header;
@@ -62,7 +66,7 @@ exports.getTrscLineSeq = function(alineAttrs, apool) {
 }
 
 /**
- * Extracst the summary seq from a given line.
+ * Extracts the summary seq from a given line.
  * @param {*} alineAttrs 
  * @param {*} apool 
  * @returns the summary sequence number or null if not found

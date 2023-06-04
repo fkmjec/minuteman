@@ -7,6 +7,7 @@ const readOnlyManager = require('ep_etherpad-lite/node/db/ReadOnlyManager.js');
 const apiUtils = require('./ApiUtils');
 const { Utterance } = require('./Utterance');
 const { SummaryStore } = require('./SummaryStore');
+const SummaryUtils = require('./SummaryUtils');
 const ChangesetUtils = require('./ChangesetUtils');
 const TranscriptUtils = require('./TranscriptUtils');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
@@ -16,7 +17,7 @@ const TRANSCRIPT_QUEUE = 'transcript_queue';
 const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
 const SUMMARY_RESULT_QUEUE = 'summary_result_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
-MAX_RABBITMQ_RETRIES = 20;
+const MAX_RABBITMQ_RETRIES = 20;
 
 const summaryStore = new SummaryStore();
 let rabbitMQConnection = null;
@@ -34,14 +35,6 @@ exports.padCreate = function(hook, context, cb){
     const builder = Changeset.builder(1, apool);
     context.pad.setText("");
     cb(undefined);
-}
-
-exports.collectContentPre = function(hook, context, cb){
-    const summary = /(?:^| )(s-[A-Za-z0-9]*)/.exec(context.cls);
-    if (summary) {
-        context.cc.doAttrib(context.state, `summary::${summary[1]}`);
-    }
-    cb();
 }
 
 async function addUtteranceToPad(utterance) {
@@ -99,9 +92,10 @@ async function appendTranscript(utterance) {
     await addUtteranceToPad(utterance);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        await addSummaryToPad(sessionId, trscChunk.seq, `${trscChunk.seq}: Summarization in progress\n`);
+        const summaryContent = `${trscChunk.seq}: Summarization in progress\n`;
+        await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
-        summaryStore.addSummary(utterance.sessionId, trscChunk);
+        summaryStore.addSummary(utterance.sessionId, trscChunk, summaryContent);
         await sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
     }
 }
@@ -152,24 +146,20 @@ exports.expressCreateServer = function(hook, args, cb) {
 
 exports.padUpdate = function(hook, context, cb) {
     logger.info("padUpdate called!");
-    // either edited by the plugin or the pad is not a transcript pad
-    if (context.pad.id.slice(-5) !== ".trsc" || !context.author) {
+    // edited by the plugin, no action needed
+    if (!context.author) {
         cb();
         return;
     }
-    const sessionId = context.pad.id.slice(0, -5); 
-    const toSummarize = summaryStore.updateTrsc(sessionId, context.pad);
-    for (const summary of toSummarize) {
-        sendChunkToSummarize(sessionId, summary.seq, summary.source, true);
+    if (context.pad.id.slice(-5) === ".trsc") {
+        const sessionId = context.pad.id.slice(0, -5); 
+        const toSummarize = summaryStore.updateTrsc(sessionId, context.pad);
+        for (const summary of toSummarize) {
+            sendChunkToSummarize(sessionId, summary.seq, summary.source, true);
+        }
+    } else if (context.pad.id.slice(-5) === ".summ") {
+        const sessionId = context.pad.id.slice(0, -5);
+        summaryStore.freezeSummaries(sessionId, context.pad);
     }
     cb();
-}
-
-exports.getLineHTMLForExport = function (hook, context) {
-    var header = _analyzeLine(context.attribLine, context.apool);
-    logger.info(header);
-    if (header) {
-        context.lineContent = "<span class=\"summary " + header + "\">" + context.lineContent + "</span>";
-    }
-    return context.lineContent;
 }

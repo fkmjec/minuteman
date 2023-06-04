@@ -8,13 +8,15 @@ function getTrscSegmentCached (atext, apool, start, end) {
     let trsc = "";
     for (const [attribLine, textLine] of ChangesetUtils.zip(attribLines, textLines)) {
         const seq = ChangesetUtils.getTrscLineSeq(attribLine, apool);
-        if (seq >= start && !started) {
-            started = true;
-        } else if (seq > end) {
-            break;
-        }
-        if (started) {
-            trsc += textLine + "\n";
+        if (seq) {
+            if (seq >= start && !started) {
+                started = true;
+            } else if (seq > end) {
+                break;
+            }
+            if (started) {
+                trsc += textLine + "\n";
+            }
         }
     }
     return trsc;

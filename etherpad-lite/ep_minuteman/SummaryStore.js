@@ -1,4 +1,5 @@
 const TranscriptUtils = require("./TranscriptUtils");
+const SummaryUtils = require("./SummaryUtils");
 
 // TODO: move this to config somewhere
 MAX_TOKEN_LEN = 512;
@@ -158,6 +159,24 @@ class SummaryStore {
             }
         }
         return summariesToUpdate;
+    }
+
+    /**
+     * takes an updated summary pad and checks which summaries were edited by the user.
+     * Those are then frozen so that they are not overriden by automatic updates.
+     * @param {*} sessionId 
+     * @param {*} pad 
+     */
+    freezeSummaries (sessionId, pad) {
+        const summaries = SummaryUtils.getSummariesFromPad(pad);
+        for (const [summarySeq, newSumm] of Object.entries(summaries)) {
+            const oldSumm = this.sessions[sessionId].summaries[summarySeq].summary;
+            if (oldSumm !== newSumm) {
+                this.updateSummaryContent(sessionId, summarySeq, newSumm);
+                console.info(`Summary ${summarySeq} was edited by the user from ${oldSumm} to ${newSumm}`);
+                this.freeze(sessionId, summarySeq);
+            }
+        }
     }
 
     /**

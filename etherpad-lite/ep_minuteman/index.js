@@ -117,6 +117,7 @@ async function connectToRabbitMQ() {
 
             channel.consume(SUMMARY_RESULT_QUEUE, (msg) => {
                 const summaryObj = JSON.parse(msg.content);
+                summaryStore.updateSummaryContent(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
                 updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
             });
             console.log("Successfully connected to rabbitmq")

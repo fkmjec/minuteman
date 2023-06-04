@@ -151,7 +151,7 @@ class SummaryStore {
         const summariesToUpdate = [];
         for (const [summarySeq, summaryObj] of Object.entries(summaries)) {
             const newText = TranscriptUtils.getTrscSegment(pad, summaryObj.trscStart, summaryObj.trscEnd);
-            if (newText !== summaryObj.source && !summaryObj.frozen) {
+            if (newText !== summaryObj.source && !session.isFrozen(summarySeq)) {
                 // update the source so that it is not updated a second time if the transcript is updated again in a different place
                 // FIXME: this is not ideal, if the request gets lost, it stops making sense.
                 summaryObj.source = newText;
@@ -173,7 +173,6 @@ class SummaryStore {
             const oldSumm = this.sessions[sessionId].summaries[summarySeq].summary;
             if (oldSumm !== newSumm) {
                 this.updateSummaryContent(sessionId, summarySeq, newSumm);
-                console.info(`Summary ${summarySeq} was edited by the user from ${oldSumm} to ${newSumm}`);
                 this.freeze(sessionId, summarySeq);
             }
         }

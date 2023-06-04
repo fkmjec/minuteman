@@ -12,6 +12,7 @@ const ChangesetUtils = require('./ChangesetUtils');
 const TranscriptUtils = require('./TranscriptUtils');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
 const amqplib = require('amqplib');
+const { Formidable } = require('formidable');
 
 const TRANSCRIPT_QUEUE = 'transcript_queue';
 const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
@@ -142,6 +143,16 @@ async function init() {
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
+    args.app.post("/api/createSumm", async (req, res) => {
+        const fields = await new Promise((resolve, reject) => {
+            new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
+        });
+        const sessionId = fields.session_id;
+        const start = fields.start;
+        const end = fields.end;
+        console.info(`Creating summary for session ${sessionId} from ${start} to ${end}`);
+        console.info("TODO: now I actually need to create the summary");
+    });
     cb();
 }
 

@@ -19,6 +19,7 @@ const SUMMARY_INPUT_QUEUE = 'summary_input_queue';
 const SUMMARY_RESULT_QUEUE = 'summary_result_queue';
 const RABBITMQ_ADDR = 'amqp://rabbitmq';
 const MAX_RABBITMQ_RETRIES = 20;
+const SUMMARY_IN_PROGRESS = "Summarization in progress";
 
 const summaryStore = new SummaryStore();
 let rabbitMQConnection = null;
@@ -93,7 +94,7 @@ async function appendTranscript(utterance) {
     await addUtteranceToPad(utterance);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        const summaryContent = `${trscChunk.seq}: Summarization in progress\n`;
+        const summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
         await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
         summaryStore.addSummary(utterance.sessionId, trscChunk, summaryContent);
@@ -150,8 +151,14 @@ exports.expressCreateServer = function(hook, args, cb) {
         const sessionId = fields.session_id;
         const start = fields.start;
         const end = fields.end;
+        // FIXME: possible security issue here
+        const pad = await padManager.getPad(sessionId + ".trsc");
+        const source = TranscriptUtils.getTrscSegment(pad, start, end);
+        const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}\n`
+        const seq = summaryStore.addUserSelectedSummary(sessionId, start, end, source, summaryInProgressText);
+        await addSummaryToPad(sessionId, seq, summaryInProgressText);
+        await sendChunkToSummarize(sessionId, seq, source, false);
         console.info(`Creating summary for session ${sessionId} from ${start} to ${end}`);
-        console.info("TODO: now I actually need to create the summary");
     });
     cb();
 }

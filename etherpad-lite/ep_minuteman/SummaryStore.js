@@ -68,7 +68,7 @@ class SummarySession {
     constructor () {
         // TODO: this will need a persistent backend, but it is not necessary for the prototype
         this.summaries = {};
-        this.currentSummSeq = 0;
+        this.currentUserSummSeq = 1000;
     }
 
     /**
@@ -126,6 +126,16 @@ class SummaryStore {
         this.sessions[sessionId].addSummary(summarySeq, trscChunk.start, trscChunk.end, trscChunk.text, summaryContent);
     }
 
+    addUserSelectedSummary(sessionId, startSeq, endSeq, summarySource, summaryContent) {
+        if (!this.sessions[sessionId]) {
+            this.sessions[sessionId] = new SummarySession();
+        }
+        const summId = this.sessions[sessionId].currentUserSummSeq;
+        this.sessions[sessionId].currentUserSummSeq += 1;
+        this.sessions[sessionId].addSummary(summId, startSeq, endSeq, summarySource, summaryContent);
+        return summId;
+    }
+
     /** 
      * Updates the content of a summary. Usually called when a new response comes from the summarizer.
      * @param {*} sessionId the session in which the summary was created
@@ -133,6 +143,13 @@ class SummaryStore {
      * @param {*} summaryContent the new content of the summary
      */
     updateSummaryContent (sessionId, summarySeq, summaryContent) {
+        if (!this.sessions[sessionId]) {
+            this.sessions[sessionId] = new SummarySession();
+        }
+        if (!this.sessions[sessionId].summaries[summarySeq]) {
+            console.info(`intended to update summary ${summarySeq} but it does not exist`);
+            return;
+        }
         this.sessions[sessionId].summaries[summarySeq].summary = summaryContent;
     }
 

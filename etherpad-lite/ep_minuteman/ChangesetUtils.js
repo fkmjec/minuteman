@@ -115,8 +115,7 @@ exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
         }
         charsBefore += textLine.length + 1;
     }
-    // FIXME: this can happen and should not be a fatal error
-    throw new Error("Summary point not found!");
+    return null;
 }
 
 /**

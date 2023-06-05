@@ -8,5 +8,7 @@ class Config():
         self.db_url = os.environ["POSTGRES_DB_URL"]
         self.etherpad_api_key = os.environ["ETHERPAD_API_KEY"]
         self.etherpad_api_url = os.environ["ETHERPAD_API_URL"]
+        self.etherpad_url = os.environ["ETHERPAD_URL"]
+        self.etherpad_api_url = self.etherpad_url + "/api"
         # TODO: from variables? by model?
         self.max_input_len = 512

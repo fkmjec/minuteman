@@ -36,7 +36,7 @@ def minuting(session_id):
     if not db_interface.session_exists(session_id):
         abort(404)
     # past_utterances = db_interface.get_past_utterances(session_id)
-    return render_template("index.html", title="Minuteman", session_id=session_id)
+    return render_template("index.html", title="Minuteman", session_id=session_id, etherpad_url=app_config.etherpad_url)
 
 
 @app.route("/", methods=["GET"])

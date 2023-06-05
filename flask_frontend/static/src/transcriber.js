@@ -99,7 +99,6 @@ Transcriber.prototype.connect = function() {
         // only record outside and audio tracks
         return;
     }
-    const participant = track.getParticipantId();
     this.meetingRecorder.addTrack(track);
 }
 

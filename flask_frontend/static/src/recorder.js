@@ -65,13 +65,8 @@ MeetingRecorder.prototype.removeTrack = function(track) {
     for (i = 0; i < array.length; i++) {
         if (array[i].track.getParticipantId() === track.getParticipantId()) {
             const recorderToRemove = array[i];
-
-            if (this.isRecording) {
-                recorderToRemove.stop();
-            } else {
-                // remove the TrackRecorder from the array
-                array.splice(i, 1);
-            }
+            recorderToRemove.stop();
+            array.splice(i, 1);
         }
     }
 
@@ -106,8 +101,6 @@ MeetingRecorder.prototype.updateNames = function() {
 };
 
 MeetingRecorder.prototype.stop = function() {
-    // set the boolean flag to false
-    this.isRecording = false;
 
     // stop all recorders
     this.recorders.forEach(trackRecorder => trackRecorder.stop());

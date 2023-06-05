@@ -4,17 +4,16 @@ import threading
 import dateutil
 
 import audio_chunk
-import whisper_online
 import faster_whisper
 
-import onnxruntime
 import numpy as np
 from faster_whisper import vad
 import transformers
 import os
 import json
 import time
-import wave
+import threading
+from queue import Queue
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"] == "true"
@@ -126,7 +125,8 @@ class Transcripts:
             self._add_session(session_id)
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
-def callback(ch, method, properties, body):
+
+def handle_request(body, speech_detector, tokenizer, backend, transcripts, channel, logger):
     # TODO: move this handler function to a separate thread as not to block pika queues
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
@@ -138,7 +138,6 @@ def callback(ch, method, properties, body):
     contains_speech = speech_detector.detect_speech(chunk)
     transcribable_audio = transcripts.add_chunk(session_id, recorder_id, chunk, contains_speech)
     if transcribable_audio is not None:
-        logger.debug("Transcribing audio")
         transcript, info = backend.transcribe(transcribable_audio.audio, language="en")
         utterance_text = ""
         for i, segment in enumerate(transcript):
@@ -156,32 +155,56 @@ def callback(ch, method, properties, body):
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
     logger.info(" [x] Received %r" % deserialized.get_session_id())
+    logger.info(author)
 
-if __name__ == "__main__":
-    # we now assume one worker, maybe we will scale to more later
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    logger.info("Starting transcription worker")
-    logger.info("Loading whisper model")
-    backend = faster_whisper.WhisperModel(WHISPER_MODEL)
-    # warm up the model
-    logger.info("Warming up whisper model")
-    backend.transcribe(np.zeros(1000, dtype=np.float32))
-    logger.info("Loading speech detector")
+
+def init_worker(queue, transcripts):
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
+    backend = faster_whisper.WhisperModel(WHISPER_MODEL)
     tokenizer = transformers.BartTokenizer.from_pretrained(TOKENIZER)
-    transcripts = Transcripts()
+    connection = get_rabbitmq_connection()
+    channel = connection.channel()
+    logger = get_logger("__worker__")
+    seq = 0
+    while True:
+        print(seq)
+        seq += 1
+        body = queue.get()
+        handle_request(body, speech_detector, tokenizer, backend, transcripts, channel, logger)
+
+
+def get_rabbitmq_connection():
     retries = 0
-    logger.info("Waiting for rabbitmq")
-    while retries < 20:
+    while retries < MAX_RABBITMQ_RETRIES:
         try:
             # FIXME: disabled heartbeats for now, because threading would be way too complex
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq', heartbeat=0))
-            break
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+            return connection
         except (pika.exceptions.AMQPConnectionError):
             logger.info(f"Waiting for rabbitmq, retry {retries + 1}")
             retries += 1
             time.sleep(1)
+
+
+def get_logger(name):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    return logger
+
+
+def callback(ch, method, properties, body):
+    queue.put(body)
+
+
+if __name__ == "__main__":
+    # setting up logging
+    logger = get_logger(__name__)
+    transcripts = Transcripts()
+    queue = Queue()
+    threading.Thread(target=init_worker, args=(queue, transcripts), daemon=True).start()
+
+    logger.info("Waiting for rabbitmq")
+    connection = get_rabbitmq_connection()
     logger.info("Connected to rabbitmq")
     channel = connection.channel()
     channel.queue_declare("audio_chunk_queue")

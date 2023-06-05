@@ -53,7 +53,7 @@ async function addSummaryToPad(sessionId, summarySeq, text) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
-    const appendChs = ChangesetUtils.getSummaryAppendChs(summPad, summarySeq, text);
+    const appendChs = ChangesetUtils.getSummaryAppendChs(summPad, summarySeq, text + "\n");
     await summPad.appendRevision(appendChs);
     padMessageHandler.updatePadClients(summPad);
 }
@@ -154,7 +154,7 @@ exports.expressCreateServer = function(hook, args, cb) {
         // FIXME: possible security issue here
         const pad = await padManager.getPad(sessionId + ".trsc");
         const source = TranscriptUtils.getTrscSegment(pad, start, end);
-        const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}\n`
+        const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}`
         const seq = summaryStore.addUserSelectedSummary(sessionId, start, end, source, summaryInProgressText);
         await addSummaryToPad(sessionId, seq, summaryInProgressText);
         await sendChunkToSummarize(sessionId, seq, source, false);

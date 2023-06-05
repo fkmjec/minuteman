@@ -38,7 +38,7 @@ def process_input(channel, api_obj, body, logger):
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
     user_edit = deserialized["user_edit"]
-    result = f"{summary_seq}/{user_edit}: {summarize(api_obj, text)}\n"
+    result = f"{summary_seq}/{user_edit}: {summarize(api_obj, text)}"
     send_summarized(channel, session_id, summary_seq, result)
     logger.info(deserialized)
 

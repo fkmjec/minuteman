@@ -9,7 +9,7 @@ MAX_RETRIES = 200
 INPUT_QUEUE_NAME = "summary_input_queue"
 OUTPUT_QUEUE_NAME = "summary_result_queue"
 TORCH_BACKEND_URL = os.environ["TORCH_BACKEND_URL"]
-MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"]
+MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"] == "true"
 REQUEST_SEQ = 0
 
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +37,7 @@ def callback(ch, method, properties, body):
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
     user_edit = deserialized["user_edit"]
-    result = f"{summary_seq}/{user_edit}: {summarize(text)}"
+    result = f"{summary_seq}/{user_edit}: {summarize(text)}\n"
     send_summarized(session_id, summary_seq, result)
     logger.info(deserialized)
     

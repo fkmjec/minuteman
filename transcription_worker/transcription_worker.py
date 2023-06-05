@@ -184,6 +184,7 @@ def get_rabbitmq_connection():
             logger.info(f"Waiting for rabbitmq, retry {retries + 1}")
             retries += 1
             time.sleep(1)
+    raise Exception("Could not connect to rabbitmq")
 
 
 def get_logger(name):

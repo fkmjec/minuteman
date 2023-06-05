@@ -8,6 +8,7 @@ services:
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
       ETHERPAD_API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
+      ETHERPAD_API_URL: "http://etherpad:9001/api"
       ETHERPAD_URL: "http://etherpad:9001/"
       PYTHONBUFFERED: 1
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600

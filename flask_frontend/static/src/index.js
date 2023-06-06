@@ -1,16 +1,16 @@
-import Transcriber from "./transcriber";
+import MeetingRecorder from "./MeetingRecorder";
 
 // JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
 // TODO move to a separate file
 const initOptions = {
     disableAudioLevels: true
 }; 
-let transcriber = new Transcriber();
+let recorder = new MeetingRecorder();
 
 
-transcriber.initJitsi(initOptions);
+recorder.initJitsi(initOptions);
 
-$(window).bind('beforeunload', transcriber.unload.bind(transcriber));
-$(window).bind('unload', transcriber.unload.bind(transcriber));
+$(window).bind('beforeunload', recorder.unload.bind(recorder));
+$(window).bind('unload', recorder.unload.bind(recorder));
 // add transcriber to global scope
-window.transcriber = transcriber;
+window.recorder = recorder;

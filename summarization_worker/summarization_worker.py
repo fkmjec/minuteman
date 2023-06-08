@@ -34,7 +34,7 @@ def send_summarized(session_id, summary_seq, summary_text):
     connection.close()
 
 
-def process_input(connection, api_obj, body, logger):
+def process_input(api_obj, body, logger):
     #TODO: move computation to a worker thread
     deserialized = json.loads(body)
     session_id = deserialized["session_id"]
@@ -42,16 +42,15 @@ def process_input(connection, api_obj, body, logger):
     text = deserialized["text"]
     user_edit = deserialized["user_edit"]
     result = f"{summary_seq}/{user_edit}: {summarize(api_obj, text)}"
-    send_summarized(connection, session_id, summary_seq, result)
+    send_summarized(session_id, summary_seq, result)
     logger.info(deserialized)
 
 
 def init_worker(queue):
-    connection = get_rabbitmq_connection()
     torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
     while True:
         body = queue.get()
-        process_input(connection, torch_interface, body, logger)
+        process_input(torch_interface, body, logger)
 
 
 def callback(ch, method, properties, body):

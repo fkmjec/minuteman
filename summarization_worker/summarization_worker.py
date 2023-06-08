@@ -21,7 +21,8 @@ def summarize(api_obj, input_string):
     return api_obj.summarize_block(input_string)
 
 
-def send_summarized(channel, session_id, summary_seq, summary_text):
+def send_summarized(connection, session_id, summary_seq, summary_text):
+    channel = connection.channel()
     summary = {
         "session_id": session_id,
         "summary_seq": summary_seq,
@@ -31,7 +32,7 @@ def send_summarized(channel, session_id, summary_seq, summary_text):
     channel.basic_publish(exchange='', routing_key=OUTPUT_QUEUE_NAME, body=json.dumps(summary))
 
 
-def process_input(channel, api_obj, body, logger):
+def process_input(connection, api_obj, body, logger):
     #TODO: move computation to a worker thread
     deserialized = json.loads(body)
     session_id = deserialized["session_id"]
@@ -39,17 +40,16 @@ def process_input(channel, api_obj, body, logger):
     text = deserialized["text"]
     user_edit = deserialized["user_edit"]
     result = f"{summary_seq}/{user_edit}: {summarize(api_obj, text)}"
-    send_summarized(channel, session_id, summary_seq, result)
+    send_summarized(connection, session_id, summary_seq, result)
     logger.info(deserialized)
 
 
 def init_worker(queue):
     connection = get_rabbitmq_connection()
     torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
-    channel = connection.channel()
     while True:
         body = queue.get()
-        process_input(channel, torch_interface, body, logger)        
+        process_input(connection, torch_interface, body, logger)
 
 
 def callback(ch, method, properties, body):

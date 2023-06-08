@@ -126,7 +126,7 @@ class Transcripts:
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
 
-def handle_request(body, speech_detector, tokenizer, backend, transcripts, connection, logger):
+def handle_request(body, speech_detector, tokenizer, backend, transcripts, logger):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
     recorder_id = deserialized.get_recorder_id()
@@ -139,12 +139,12 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, conne
     if transcribable_audio is not None:
         transcript, info = backend.transcribe(transcribable_audio.audio, language="en")
         utterance_text = ""
-        channel = connection.channel()
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
             logger.debug(f"Transcript {i}: {segment.text}")
         utterance_text = f"{author}: {utterance_text}\n"
         if len(utterance_text) > 0:
+            # FIXME: how should this be done properly?
             utterance = {
                 "utterance": utterance_text,
                 "session_id": session_id,
@@ -152,8 +152,11 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, conne
                 "seq": transcribable_audio.seq,
                 "token_count": len(tokenizer(utterance_text)["input_ids"])
             }
+            connection = get_rabbitmq_connection()
+            channel = connection.channel()
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
+            connection.close()
     logger.info(" [x] Received %r" % deserialized.get_session_id())
     logger.info(author)
 
@@ -163,10 +166,9 @@ def init_worker(queue, transcripts):
     backend = faster_whisper.WhisperModel(WHISPER_MODEL)
     tokenizer = transformers.BartTokenizer.from_pretrained(TOKENIZER)
     logger = get_logger("__worker__")
-    connection = get_rabbitmq_connection()
     while True:
         body = queue.get()
-        handle_request(body, speech_detector, tokenizer, backend, transcripts, connection, logger)
+        handle_request(body, speech_detector, tokenizer, backend, transcripts, logger)
 
 
 def get_rabbitmq_connection():
@@ -197,11 +199,8 @@ if __name__ == "__main__":
     logger = get_logger(__name__)
     transcripts = Transcripts()
     queue = Queue()
-    threading.Thread(target=init_worker, args=(queue, transcripts), daemon=True).start()
-
-    logger.info("Waiting for rabbitmq")
     connection = get_rabbitmq_connection()
-    logger.info("Connected to rabbitmq")
+    threading.Thread(target=init_worker, args=(queue, transcripts), daemon=True).start()
     channel = connection.channel()
     channel.queue_declare("audio_chunk_queue")
     channel.basic_consume(queue='audio_chunk_queue', on_message_callback=callback, auto_ack=True)

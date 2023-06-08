@@ -21,7 +21,8 @@ def summarize(api_obj, input_string):
     return api_obj.summarize_block(input_string)
 
 
-def send_summarized(connection, session_id, summary_seq, summary_text):
+def send_summarized(session_id, summary_seq, summary_text):
+    connection = get_rabbitmq_connection()
     channel = connection.channel()
     summary = {
         "session_id": session_id,
@@ -30,6 +31,7 @@ def send_summarized(connection, session_id, summary_seq, summary_text):
     }
     channel.queue_declare(OUTPUT_QUEUE_NAME, durable=True)
     channel.basic_publish(exchange='', routing_key=OUTPUT_QUEUE_NAME, body=json.dumps(summary))
+    connection.close()
 
 
 def process_input(connection, api_obj, body, logger):

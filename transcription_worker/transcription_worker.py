@@ -126,8 +126,7 @@ class Transcripts:
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
 
-def handle_request(body, speech_detector, tokenizer, backend, transcripts, channel, logger):
-    # TODO: move this handler function to a separate thread as not to block pika queues
+def handle_request(body, speech_detector, tokenizer, backend, transcripts, connection, logger):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
     recorder_id = deserialized.get_recorder_id()
@@ -140,6 +139,7 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, chann
     if transcribable_audio is not None:
         transcript, info = backend.transcribe(transcribable_audio.audio, language="en")
         utterance_text = ""
+        channel = connection.channel()
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
             logger.debug(f"Transcript {i}: {segment.text}")
@@ -162,22 +162,17 @@ def init_worker(queue, transcripts):
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     backend = faster_whisper.WhisperModel(WHISPER_MODEL)
     tokenizer = transformers.BartTokenizer.from_pretrained(TOKENIZER)
-    connection = get_rabbitmq_connection()
-    channel = connection.channel()
     logger = get_logger("__worker__")
-    seq = 0
+    connection = get_rabbitmq_connection()
     while True:
-        print(seq)
-        seq += 1
         body = queue.get()
-        handle_request(body, speech_detector, tokenizer, backend, transcripts, channel, logger)
+        handle_request(body, speech_detector, tokenizer, backend, transcripts, connection, logger)
 
 
 def get_rabbitmq_connection():
     retries = 0
     while retries < MAX_RABBITMQ_RETRIES:
         try:
-            # FIXME: disabled heartbeats for now, because threading would be way too complex
             connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
             return connection
         except (pika.exceptions.AMQPConnectionError):

@@ -39,15 +39,19 @@ def minuting(session_id):
     return render_template("index.html", title="Minuteman", session_id=session_id, etherpad_url=app_config.etherpad_url)
 
 
-@app.route("/", methods=["GET"])
-def index():
+@app.route("/new_minuting/", methods=["GET"])
+def new_minuting():
     id = view_utils.get_random_id(20)
     db_interface.create_minuteman_session(id, view_utils.get_current_time())
     editor_interface.create_pad_stack(id)
     return redirect(url_for('minuting', session_id=id))
 
 
-# placeholder endpoint for the development of the new ASR api
+@app.route("/", methods=["GET"])
+def about():
+    return render_template("about.html")
+
+
 @app.route("/transcribe/<session_id>", methods=["POST"])
 def transcribe(session_id):
     float_array = []
@@ -63,7 +67,6 @@ def transcribe(session_id):
 
     float_array = np.array(float_array)
     # float_array = signal.resample_poly(float_array, TARGET_SAMPLE_RATE)
-    print(len(float_array))
     chunk = view_utils.create_audio_chunk(session_id, author, recorder_id, timestamp, float_array)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()

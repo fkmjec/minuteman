@@ -55,6 +55,7 @@ def init_worker(queue):
 
 def callback(ch, method, properties, body):
     queue.put(body)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 def get_logger(name):
@@ -86,5 +87,5 @@ if __name__ == "__main__":
     threading.Thread(target=init_worker, args=(queue,), daemon=True).start()
     channel = connection.channel()
     channel.queue_declare(INPUT_QUEUE_NAME, durable=True)
-    channel.basic_consume(queue=INPUT_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue=INPUT_QUEUE_NAME, on_message_callback=callback)
     channel.start_consuming()

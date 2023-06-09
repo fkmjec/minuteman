@@ -192,6 +192,8 @@ def get_logger(name):
 
 def callback(ch, method, properties, body):
     queue.put(body)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 
 if __name__ == "__main__":
@@ -203,5 +205,5 @@ if __name__ == "__main__":
     threading.Thread(target=init_worker, args=(queue, transcripts), daemon=True).start()
     channel = connection.channel()
     channel.queue_declare("audio_chunk_queue")
-    channel.basic_consume(queue='audio_chunk_queue', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='audio_chunk_queue', on_message_callback=callback)
     channel.start_consuming()

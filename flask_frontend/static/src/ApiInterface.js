@@ -26,4 +26,16 @@ function sendAudioData(audioData, startTime, author, recorderId) {
     fetch(request);
 }
 
-export default sendAudioData;
+function setChunkLen(chunkLen) {
+    let data = new FormData();
+    let sessionId = getSessionId();
+    data.append('chunk_len', chunkLen);
+    let apiUrl = window.location.origin + "/set_chunk_len/" + sessionId;
+    const request = new Request(apiUrl, {
+        method: 'POST',
+        body: data,
+    });
+    fetch(request);
+}
+
+export default { sendAudioData, setChunkLen };

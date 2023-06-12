@@ -1,4 +1,4 @@
-import sendAudioData from "./apiInterface.js";
+import { sendAudioData } from "./ApiInterface.js";
 
 // TODO move up in the hierarchy
 const SENT_CHUNK_LEN = 1.0; // seconds

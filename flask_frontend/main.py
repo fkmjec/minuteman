@@ -52,6 +52,15 @@ def about():
     return render_template("about.html")
 
 
+@app.route("/set_chunk_len/<session_id>", methods=["POST"])
+def set_chunk_len(session_id):
+    print(session_id)
+    chunk_len = request.form.get("chunk_len")
+    print(chunk_len)
+    editor_interface.set_chunk_len(session_id, chunk_len)
+    return jsonify({"status_code": 200, "message": "ok"})
+
+
 @app.route("/transcribe/<session_id>", methods=["POST"])
 def transcribe(session_id):
     float_array = []

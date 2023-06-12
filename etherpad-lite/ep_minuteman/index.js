@@ -160,6 +160,16 @@ exports.expressCreateServer = function(hook, args, cb) {
         await sendChunkToSummarize(sessionId, seq, source, false);
         console.info(`Creating summary for session ${sessionId} from ${start} to ${end}`);
     });
+
+    args.app.post("/api/setChunkLen", async (req, res) => {
+        const fields = await new Promise((resolve, reject) => {
+            new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
+        });
+        const sessionId = fields.session_id;
+        const chunkLen = fields.chunk_len;
+        console.info(`Setting chunk length of ${sessionId} to ${chunkLen}`);
+    });
+
     cb();
 }
 

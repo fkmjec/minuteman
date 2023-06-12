@@ -33,7 +33,24 @@ class PadInterface:
         summ_pad_id = self._get_summ_pad_id(pad_id)
         self.pad.createPad(transcript_pad_id, "Works with a transcript!")
         self.pad.createPad(summ_pad_id, "Works with a summary!")
-    
+
+
+    def set_chunk_len(self, session_id, chunk_len):
+        url = self.config.etherpad_api_url + "/setChunkLen"
+        params = {}
+        data = {
+            "apikey": self.config.etherpad_api_key,
+            "session_id": session_id,
+            "chunk_len": chunk_len,
+        }
+
+        response = requests.post(url, params=params, data=data)
+        print(response)
+        if response.status_code == 200 and response.json()["code"] == 0:
+            return True
+        return False
+
+
     # def add_trsc_line(self, pad_id, trsc_line):
     #     # FIXME: how will this api work? It would be logical to keep the session id private
     #     # so that not everyone can access the recording button

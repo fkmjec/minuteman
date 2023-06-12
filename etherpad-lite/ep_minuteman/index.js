@@ -167,6 +167,7 @@ exports.expressCreateServer = function(hook, args, cb) {
         });
         const sessionId = fields.session_id;
         const chunkLen = fields.chunk_len;
+        summaryStore.setChunkLen(sessionId, chunkLen);
         console.info(`Setting chunk length of ${sessionId} to ${chunkLen}`);
     });
 

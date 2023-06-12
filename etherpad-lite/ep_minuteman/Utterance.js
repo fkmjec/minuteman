@@ -2,7 +2,6 @@ class Utterance {
     utterance;
     timestamp;
     sessionId;
-    tokenizedLen;
     seq;
 
     constructor(receivedJsonStr) {
@@ -11,7 +10,6 @@ class Utterance {
         this.timestamp = receivedJson.timestamp;
         this.utterance = receivedJson.utterance;
         this.sessionId = receivedJson.session_id;
-        this.tokenizedLen = receivedJson.token_count;
         this.seq = receivedJson.seq;
     }
 };

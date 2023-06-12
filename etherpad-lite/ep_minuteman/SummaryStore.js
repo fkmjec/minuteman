@@ -5,28 +5,29 @@ const SummaryUtils = require("./SummaryUtils");
 MAX_TOKEN_LEN = 512;
 
 class TranscriptChunk {
-    constructor (text, tokenizedLen, start, end, seq) {
+    constructor (text, len, start, end, seq) {
         this.text = text;
         this.start = start;
         this.end = end;
-        this.tokenizedLen = tokenizedLen;
+        this.len = len;
         this.seq = seq;
     }
 }
 
 class TranscriptChunker {
-    constructor (maxTokenLen) {
+    constructor (maxWordLen) {
         this.currentChunk = "";
         this.started = false;
         this.currentLen = 0;
         this.currentStart = 0;
         this.currentEnd = 0;
         this.currentSummSeq = 0;
-        this.maxTokenLen = maxTokenLen;
+        this.maxWordLen = maxWordLen;
     }
 
     append (utterance) {
-        if (this.currentLen + utterance.tokenizedLen > this.maxTokenLen) {
+        const utteranceWordLen = utterance.split(/\s+/).length;
+        if (this.currentLen + utteranceWordLen > this.maxWordLen) {
             const returnedChunk = new TranscriptChunk(
                 this.currentChunk,
                 this.currentLen,
@@ -36,13 +37,13 @@ class TranscriptChunker {
             );
             this.currentSummSeq += 1;
             this.currentChunk = utterance.utterance;
-            this.currentLen = utterance.tokenizedLen;
+            this.currentLen = utteranceWordLen;
             this.currentStart = utterance.seq;
             this.currentEnd = utterance.seq;
             return returnedChunk;
         } else {
             this.currentChunk += utterance.utterance;
-            this.currentLen += utterance.tokenizedLen;
+            this.currentLen += utteranceWordLen;
             this.currentEnd = utterance.seq;
             return null;
         }
@@ -110,6 +111,13 @@ class SummaryStore {
         }
         const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);
         return possibleChunk;
+    }
+
+    setChunkLen(sessionId, len) {
+        if (!this.startedChunks[sessionId]) {
+            this.startedChunks[sessionId] = new TranscriptChunker(len);
+        }
+        this.startedChunks[sessionId].maxWordLen = len;
     }
 
     /**

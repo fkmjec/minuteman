@@ -150,7 +150,6 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, logge
                 "session_id": session_id,
                 "timestamp": str(timestamp),
                 "seq": transcribable_audio.seq,
-                "token_count": len(tokenizer(utterance_text)["input_ids"])
             }
             connection = get_rabbitmq_connection()
             channel = connection.channel()

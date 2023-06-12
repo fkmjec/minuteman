@@ -32,7 +32,6 @@ def send_utterances(trsc, channel, session_id, tokenizer):
             "session_id": session_id,
             "timestamp": str(timestamp),
             "seq": seq,
-            "token_count": len(tokenizer(utterance_text)["input_ids"])
         }
         channel.queue_declare("transcript_queue", durable=True)
         channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))

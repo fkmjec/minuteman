@@ -39,11 +39,13 @@ def minuting(session_id):
     return render_template("index.html", title="Minuteman", session_id=session_id, etherpad_url=app_config.etherpad_url)
 
 
-@app.route("/new_minuting/", methods=["GET"])
+@app.route("/new_minuting/", methods=["POST"])
 def new_minuting():
+    debug = request.form.get("debug_mode_toggle")
+    debug = debug == "on"
     id = view_utils.get_random_id(20)
     db_interface.create_minuteman_session(id, view_utils.get_current_time())
-    editor_interface.create_pad_stack(id)
+    editor_interface.create_session(id, debug)
     return redirect(url_for('minuting', session_id=id))
 
 
@@ -54,9 +56,7 @@ def about():
 
 @app.route("/set_chunk_len/<session_id>", methods=["POST"])
 def set_chunk_len(session_id):
-    print(session_id)
     chunk_len = request.form.get("chunk_len")
-    print(chunk_len)
     editor_interface.set_chunk_len(session_id, chunk_len)
     return jsonify({"status_code": 200, "message": "ok"})
 

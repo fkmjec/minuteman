@@ -66,10 +66,14 @@ class Summary {
 }
 
 class SummarySession {
-    constructor () {
+    /**
+     * @param {*} debug whether the session is in debug mode or not
+     */
+    constructor (debug) {
         // TODO: this will need a persistent backend, but it is not necessary for the prototype
         this.summaries = {};
         this.currentUserSummSeq = 1000;
+        this.debug = debug
     }
 
     /**
@@ -101,6 +105,15 @@ class SummaryStore {
     }
 
     /**
+     * Creates a new session
+     * @param {*} sessionId the id of the session
+     * @param {*} debug whether the session is in debug mode or not
+     */
+    createSession(sessionId, debug) {
+        this.sessions[sessionId] = new SummarySession(debug);
+    }
+
+    /**
      * Adds an utterance to the corresponding session.
      * @param {*} utterance the utterance to add
      * @returns a transcript chunk if the utterance caused a chunk to be completed, null otherwise
@@ -128,7 +141,7 @@ class SummaryStore {
      */
     addSummary (sessionId, trscChunk, summaryContent) {
         if (!this.sessions[sessionId]) {
-            this.sessions[sessionId] = new SummarySession();
+            this.createSession(sessionId, false);
         }
         const summarySeq = trscChunk.seq;
         this.sessions[sessionId].addSummary(summarySeq, trscChunk.start, trscChunk.end, trscChunk.text, summaryContent);
@@ -136,7 +149,7 @@ class SummaryStore {
 
     addUserSelectedSummary(sessionId, startSeq, endSeq, summarySource, summaryContent) {
         if (!this.sessions[sessionId]) {
-            this.sessions[sessionId] = new SummarySession();
+            this.createSession(sessionId, false);
         }
         const summId = this.sessions[sessionId].currentUserSummSeq;
         this.sessions[sessionId].currentUserSummSeq += 1;
@@ -152,7 +165,7 @@ class SummaryStore {
      */
     updateSummaryContent (sessionId, summarySeq, summaryContent) {
         if (!this.sessions[sessionId]) {
-            this.sessions[sessionId] = new SummarySession();
+            this.createSession(sessionId, false);
         }
         if (!this.sessions[sessionId].summaries[summarySeq]) {
             console.info(`intended to update summary ${summarySeq} but it does not exist`);
@@ -169,7 +182,7 @@ class SummaryStore {
      */
     updateTrsc (sessionId, pad) {
         if (!this.sessions[sessionId]) {
-            this.sessions[sessionId] = new SummarySession();
+            this.createSession(sessionId, false);
         }
         const session = this.sessions[sessionId];
         const summaries = session.summaries;

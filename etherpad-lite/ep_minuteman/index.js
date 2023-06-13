@@ -12,6 +12,7 @@ const ChangesetUtils = require('./ChangesetUtils');
 const TranscriptUtils = require('./TranscriptUtils');
 const logger = require('ep_etherpad-lite/node_modules/log4js').getLogger('ep_etherpad-lite');
 const amqplib = require('amqplib');
+const express = require('express');
 const { Formidable } = require('formidable');
 
 const TRANSCRIPT_QUEUE = 'transcript_queue';
@@ -144,14 +145,15 @@ async function init() {
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function(hook, args, cb) {
     logger.info("Express create server called!");
+    args.app.use(express.json());
     args.app.post("/api/createSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {
             new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
         });
+        // TODO: check api key?
         const sessionId = fields.session_id;
         const start = fields.start;
         const end = fields.end;
-        // FIXME: possible security issue here
         const pad = await padManager.getPad(sessionId + ".trsc");
         const source = TranscriptUtils.getTrscSegment(pad, start, end);
         const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}`
@@ -159,6 +161,7 @@ exports.expressCreateServer = function(hook, args, cb) {
         await addSummaryToPad(sessionId, seq, summaryInProgressText);
         await sendChunkToSummarize(sessionId, seq, source, false);
         console.info(`Creating summary for session ${sessionId} from ${start} to ${end}`);
+        res.status(200).send("OK");
     });
 
     args.app.post("/api/setChunkLen", async (req, res) => {
@@ -170,9 +173,26 @@ exports.expressCreateServer = function(hook, args, cb) {
         if (chunkLen > 0) {
             summaryStore.setChunkLen(sessionId, chunkLen);
             console.info(`Setting chunk length of ${sessionId} to ${chunkLen}`);
+            res.status(200).send("OK");
         } else {
             res.status(400).send("Invalid chunk length");
         }
+    });
+
+    args.app.post("/api/createSessionObject", async (req, res) => {
+        let parsed = null;
+        try {
+            parsed = req.body;
+        } catch (err) {
+            logger.error(err.message);
+            res.status(400).send("Invalid JSON");
+            return;
+        }
+        const sessionId = parsed.session_id;
+        const debug = parsed.debug;
+        console.info(`Creating session object for session ${sessionId} with debug ${debug}`);
+        summaryStore.createSession(sessionId, debug);
+        res.status(200).send("OK");
     });
 
     cb();

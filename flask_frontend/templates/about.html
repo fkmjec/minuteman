@@ -6,8 +6,12 @@
 <p>
     Minuteman is a tool for transcribing and summarizing Jitsi meetings.
 </p>
-<a href="{{ url_for('new_minuting') }}">Give me a new session!</a>
 
+<form action="{{ url_for('new_minuting') }}" method="post">
+    <label for="debug_mode_toggle">Use debug mode</label>
+    <input type="checkbox" id="debug_mode_toggle" name="debug_mode_toggle">
+    <input type="submit" value="Give me a new session!">    
+</form>
 <h2>User guide</h2>
 <p>
 When you click the link above, you will be taken to a new page with a control

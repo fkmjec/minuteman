@@ -25,15 +25,15 @@ class PadInterface:
         else:
             raise ValueError("Incorrect pad_id that does not end with .summ or .trcs")
 
-    def create_pad_stack(self, pad_id):
+    def create_session(self, session_id, debug=False):
         # creates a pad for the transcript and a pad for the summary
         # TODO: do I want to put the pads in a separate group?
         # TODO: error handling here
-        transcript_pad_id = self._get_trsc_pad_id(pad_id)
-        summ_pad_id = self._get_summ_pad_id(pad_id)
+        transcript_pad_id = self._get_trsc_pad_id(session_id)
+        summ_pad_id = self._get_summ_pad_id(session_id)
         self.pad.createPad(transcript_pad_id, "Works with a transcript!")
         self.pad.createPad(summ_pad_id, "Works with a summary!")
-
+        self._create_session_object(session_id, debug=debug)
 
     def set_chunk_len(self, session_id, chunk_len):
         url = self.config.etherpad_api_url + "/setChunkLen"
@@ -44,6 +44,17 @@ class PadInterface:
             "chunk_len": chunk_len,
         }
         requests.post(url, params=params, data=data)
+
+
+    def _create_session_object(self, session_id, debug):
+        url = self.config.etherpad_api_url + "/createSessionObject"
+        headers = {"Content-Type": "application/json"}
+        data = {
+            "apikey": self.config.etherpad_api_key,
+            "session_id": session_id,
+            "debug": debug
+        }
+        requests.post(url, headers=headers, data=json.dumps(data))
 
 
     def get_transcript(self, pad_id):

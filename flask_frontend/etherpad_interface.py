@@ -43,71 +43,14 @@ class PadInterface:
             "session_id": session_id,
             "chunk_len": chunk_len,
         }
+        requests.post(url, params=params, data=data)
 
-        response = requests.post(url, params=params, data=data)
-        print(response)
-        if response.status_code == 200 and response.json()["code"] == 0:
-            return True
-        return False
-
-
-    # def add_trsc_line(self, pad_id, trsc_line):
-    #     # FIXME: how will this api work? It would be logical to keep the session id private
-    #     # so that not everyone can access the recording button
-    #     # TODO: error handling here
-    #     transcript_pad_id = self._get_trsc_pad_id(pad_id)
-    #     trsc_line = "\n" + trsc_line
-    #     self.pad.appendText(transcript_pad_id, trsc_line)
-
-    # def add_summ_line(self, pad_id, summ_line, summ_line_id, trsc_start, trsc_end):
-    #     # FIXME: how will this api work? It would be logical to keep the session id private
-    #     # so that not everyone can access the recording button
-    #     # TODO: HTML appending so that we can tag summary lines
-    #     # TODO: error handling here
-    #     summary_pad_id = self._get_summ_pad_id(pad_id)
-    #     # TODO: pyetherpadlite does not support our API extensions yet with the ep_minuteman plugin
-    #     # therefore, we have to make the requests ourselves
-    #     url = self.config.etherpad_api_url + "/appendSumm"
-    #     params = {}
-    #     data = {
-    #         "padID": summary_pad_id,
-    #         "apikey": self.config.etherpad_api_key,
-    #         "data": json.dumps({
-    #             "id": summ_line_id,
-    #             "text": summ_line,
-    #             "preTrsc": trsc_start,
-    #             "postTrsc": trsc_end
-    #         }
-    #     )}
-
-    #     response = requests.post(url, params=params, data=data)
-    #     if response.status_code == 200 and response.json()["code"] == 0:
-    #         return True
-    #     logging.debug(response)
-    #     return False
-    #     # self.pad.appendText(summary_pad_id, summ_line)
-    
-    # def update_summ_line(self, pad_id, summ_line, summ_line_id):
-    #     summary_pad_id = self._get_summ_pad_id(pad_id)
-    #     # TODO: pyetherpadlite does not support our API extensions yet with the ep_minuteman plugin
-    #     # therefore, we have to make the requests ourselves
-    #     url = self.config.etherpad_api_url + "/updateSumm"
-    #     params = {}
-    #     data = {"padID": summary_pad_id, "apikey": self.config.etherpad_api_key, "data": json.dumps({"id": summ_line_id, "text": summ_line})}
-
-    #     response = requests.post(url, params=params, data=data)
-    #     if response.status_code == 200 and response.json()["code"] == 0:
-    #         return True
-    #     logging.debug(response)
-    #     return False
 
     def get_transcript(self, pad_id):
         transcript_pad_id = self._get_trsc_pad_id(pad_id)
         transcript = self.pad.getText(transcript_pad_id)
         return transcript["text"]
     
-    # def get_transcript_segments(self, pad_id):
-    #     transcript = self.get_transcript(pad_id)
 
     def get_minutes(self, pad_id):
         # TODO maybe rework this together with a better api in ep_minuteman

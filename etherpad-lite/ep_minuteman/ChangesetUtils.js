@@ -1,5 +1,4 @@
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
-
 const Pad = require('ep_etherpad-lite/node/db/Pad');
 
 function serializeTrscSeq(seq) {
@@ -22,6 +21,20 @@ exports.prependTrscSeqNum = function(text, seq) {
     const paddedSeq = seq.toString().padStart(4, '0');
     const prepended = `${paddedSeq} || ${text}`;
     return prepended;
+}
+
+exports.prependSummMetadata = function(text, seq, start, end) {
+    const prepended = `${seq} ${start}->${end} || ${text}`;
+    return prepended;
+}
+
+exports.stripSummMetadata = function(text) {
+    const split = text.split(' || ');
+    if (split.length > 1) {
+        return split[1];
+    } else {
+        return text;
+    }
 }
 
 exports.stripTrscSeqNum = function(text) {
@@ -142,7 +155,7 @@ exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
 exports.getUtteranceAppendChs = function(pad, utterance, isDebug) {
     let appendedText = utterance.utterance;
     if (isDebug) {
-        appendedText = prependTrscSeqNum(appendedText, utterance.seq);
+        appendedText = exports.prependTrscSeqNum(appendedText, utterance.seq);
     }
     return appendWithAttribs(pad, appendedText, [[ "trsc_seq", serializeTrscSeq(utterance.seq)]]);
 }

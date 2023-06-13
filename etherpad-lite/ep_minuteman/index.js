@@ -46,7 +46,7 @@ async function addUtteranceToPad(trscPad, utterance, isDebug) {
     padMessageHandler.updatePadClients(trscPad);
 }
 
-async function addSummaryToPad(sessionId, summarySeq, text) {
+async function addSummaryToPad(sessionId, summarySeq, text, isDebug) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
@@ -92,7 +92,10 @@ async function appendTranscript(utterance) {
     await addUtteranceToPad(trscPad, utterance, isDebug);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        const summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        if (isDebug) {
+            summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${utterance.text}`;
+        }
         await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end, isDebug);
         summaryStore.addSummary(utterance.sessionId, trscChunk, summaryContent);
@@ -117,8 +120,19 @@ async function connectToRabbitMQ() {
 
             channel.consume(SUMMARY_RESULT_QUEUE, (msg) => {
                 const summaryObj = JSON.parse(msg.content);
+                const isDebug = summaryStore.sessions[summaryObj.session_id] && summaryStore.sessions[summaryObj.session_id].debug;
+                let summaryContent = summaryObj.summary_text;
+                if (isDebug) {
+                    // TODO: rewrite this mess
+                    const summary = summaryStore.sessions[summaryObj.session_id].summaries[summaryObj.summary_seq];
+                    const start = summary.trscStart;
+                    const end = summary.trscEnd;
+                    const seq = summary.seq;
+                    summaryContent = ChangesetUtils.prependSummMetadata(summaryContent, seq, start, end);
+                }
+
                 summaryStore.updateSummaryContent(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
-                updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
+                updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryContent);
             }, { noAck: true });
             console.log("Successfully connected to rabbitmq")
             return connection;
@@ -154,7 +168,7 @@ exports.expressCreateServer = function(hook, args, cb) {
         const pad = await padManager.getPad(sessionId + ".trsc");
         const isDebug = summaryStore.sessions[sessionId] && summaryStore.sessions[sessionId].debug;
         const source = TranscriptUtils.getTrscSegment(pad, start, end, isDebug);
-        const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}`
+        let summaryInProgressText = `${SUMMARY_IN_PROGRESS}`
         const seq = summaryStore.addUserSelectedSummary(sessionId, start, end, source, summaryInProgressText);
         await addSummaryToPad(sessionId, seq, summaryInProgressText);
         await sendChunkToSummarize(sessionId, seq, source, false);

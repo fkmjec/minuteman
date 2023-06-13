@@ -40,8 +40,7 @@ def process_input(api_obj, body, logger):
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
-    user_edit = deserialized["user_edit"]
-    result = f"{summary_seq}/{user_edit}: {summarize(api_obj, text)}"
+    result = f"{summarize(api_obj, text)}"
     send_summarized(session_id, summary_seq, result)
     logger.info(deserialized)
 

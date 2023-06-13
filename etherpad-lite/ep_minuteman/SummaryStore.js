@@ -26,7 +26,7 @@ class TranscriptChunker {
     }
 
     append (utterance) {
-        const utteranceWordLen = utterance.split(/\s+/).length;
+        const utteranceWordLen = utterance.utterance.split(/\s+/).length;
         if (this.currentLen + utteranceWordLen > this.maxWordLen) {
             const returnedChunk = new TranscriptChunk(
                 this.currentChunk,

@@ -18,6 +18,21 @@ function deserializeSummSeq(str) {
     return parseInt(str.split('_')[1]);
 }
 
+exports.prependTrscSeqNum = function(text, seq) {
+    const paddedSeq = seq.toString().padStart(4, '0');
+    const prepended = `${paddedSeq} || ${text}`;
+    return prepended;
+}
+
+exports.stripTrscSeqNum = function(text) {
+    const split = text.split(' || ');
+    if (split.length > 1) {
+        return split[1];
+    } else {
+        return text;
+    }
+}
+
 function appendWithAttribs(pad, text, attribs) {
     const oldText = Pad.cleanText(pad.text());
     const cleanText = Pad.cleanText(text);
@@ -124,6 +139,10 @@ exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
  * @param {*} utterance - Utterance object to append
  * @returns Changeset to apply to pad
  */
-exports.getUtteranceAppendChs = function(pad, utterance) {
-    return appendWithAttribs(pad, utterance.utterance, [[ "trsc_seq", serializeTrscSeq(utterance.seq)]]);
+exports.getUtteranceAppendChs = function(pad, utterance, isDebug) {
+    let appendedText = utterance.utterance;
+    if (isDebug) {
+        appendedText = prependTrscSeqNum(appendedText, utterance.seq);
+    }
+    return appendWithAttribs(pad, appendedText, [[ "trsc_seq", serializeTrscSeq(utterance.seq)]]);
 }

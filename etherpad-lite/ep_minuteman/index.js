@@ -40,12 +40,8 @@ exports.padCreate = function(hook, context, cb){
     cb(undefined);
 }
 
-async function addUtteranceToPad(utterance) {
-    let sessionId = utterance.sessionId;
-    sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
-    const trscPadId = sessionId + ".trsc";
-    const trscPad = await padManager.getPad(trscPadId);
-    const appendChs = ChangesetUtils.getUtteranceAppendChs(trscPad, utterance);
+async function addUtteranceToPad(trscPad, utterance, isDebug) {
+    const appendChs = ChangesetUtils.getUtteranceAppendChs(trscPad, utterance, isDebug);
     await trscPad.appendRevision(appendChs);
     padMessageHandler.updatePadClients(trscPad);
 }
@@ -86,18 +82,19 @@ async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = fal
 
 async function appendTranscript(utterance) {
     let sessionId = utterance.sessionId;
+    const isDebug = summaryStore.sessions[sessionId] && summaryStore.sessions[sessionId].debug;
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const trscPadId = sessionId + ".trsc";
     const trscPad = await padManager.getPad(trscPadId);
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
-    const trscChunk = summaryStore.appendUtterance(utterance);
-    await addUtteranceToPad(utterance);
+    const trscChunk = summaryStore.appendUtterance(utterance, isDebug);
+    await addUtteranceToPad(trscPad, utterance, isDebug);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
         const summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
         await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
-        const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end);
+        const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end, isDebug);
         summaryStore.addSummary(utterance.sessionId, trscChunk, summaryContent);
         await sendChunkToSummarize(sessionId, trscChunk.seq, trscText);
     }
@@ -155,7 +152,8 @@ exports.expressCreateServer = function(hook, args, cb) {
         const start = fields.start;
         const end = fields.end;
         const pad = await padManager.getPad(sessionId + ".trsc");
-        const source = TranscriptUtils.getTrscSegment(pad, start, end);
+        const isDebug = summaryStore.sessions[sessionId] && summaryStore.sessions[sessionId].debug;
+        const source = TranscriptUtils.getTrscSegment(pad, start, end, isDebug);
         const summaryInProgressText = `user summary: ${SUMMARY_IN_PROGRESS}`
         const seq = summaryStore.addUserSelectedSummary(sessionId, start, end, source, summaryInProgressText);
         await addSummaryToPad(sessionId, seq, summaryInProgressText);

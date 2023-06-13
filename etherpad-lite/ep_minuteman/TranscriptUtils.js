@@ -1,7 +1,7 @@
 const Changeset = require('ep_etherpad-lite/static/js/Changeset');
 const ChangesetUtils = require('./ChangesetUtils');
 
-function getTrscSegmentCached (atext, apool, start, end) {
+function getTrscSegmentCached (atext, apool, start, end, isDebug) {
     const textLines = atext.text.slice(0, -1).split('\n');
     const attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
     let started = false;
@@ -15,7 +15,11 @@ function getTrscSegmentCached (atext, apool, start, end) {
                 break;
             }
             if (started) {
-                trsc += textLine + "\n";
+                if (isDebug) {
+                    trsc += ChangesetUtils.stripTrscSeqNum(textLine) + "\n";
+                } else {
+                    trsc += textLine + "\n";
+                }
             }
         }
     }
@@ -31,9 +35,9 @@ function getTrscSegmentCached (atext, apool, start, end) {
  * @param {*} end end utterance seq number
  * @returns the transcript segment as string
  */
-exports.getTrscSegment = function (pad, start, end) {
+exports.getTrscSegment = function (pad, start, end, isDebug) {
     // FIXME: is this a valid way to acces the atext? Will it always be consistent?
     const atext = pad.atext;
     const apool = pad.apool();
-    return getTrscSegmentCached(atext, apool, start, end);
+    return getTrscSegmentCached(atext, apool, start, end, isDebug);
 }

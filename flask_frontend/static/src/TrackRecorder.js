@@ -1,4 +1,4 @@
-import ApiInterace from "./ApiInterface.js";
+import ApiInterface from "./ApiInterface.js";
 
 // TODO move up in the hierarchy
 const SENT_CHUNK_LEN = 1.0; // seconds

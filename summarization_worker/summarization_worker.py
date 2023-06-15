@@ -6,6 +6,8 @@ import os
 import api_interface
 import threading
 from queue import Queue
+import transcript
+import transformers
 
 MAX_RETRIES = 200
 INPUT_QUEUE_NAME = "summary_input_queue"
@@ -34,22 +36,30 @@ def send_summarized(session_id, summary_seq, summary_text):
     connection.close()
 
 
-def process_input(api_obj, body, logger):
+def process_input(api_obj, body, logger, tokenizer):
     #TODO: move computation to a worker thread
     deserialized = json.loads(body)
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
-    result = f"{summarize(api_obj, text)}"
+    trsc = transcript.Transcript.from_automin(text)
+    splits = trsc.split_to_lens(tokenizer, 512)
+    results = []
+    for split in splits:
+        result = f"{summarize(api_obj, split)}"
+        results.append(result)
+    result = " ".join(results)
     send_summarized(session_id, summary_seq, result)
     logger.info(deserialized)
 
 
 def init_worker(queue):
     torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
+    # FIXME: tokenizer depends on the model, so this needs to be handled better
+    tokenizer = transformers.BartTokenizer.from_pretrained("facebook/bart-large-xsum")
     while True:
         body = queue.get()
-        process_input(torch_interface, body, logger)
+        process_input(torch_interface, body, logger, tokenizer)
 
 
 def callback(ch, method, properties, body):

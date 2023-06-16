@@ -14,12 +14,13 @@ function getTrscSegmentCached (atext, apool, start, end, isDebug) {
             } else if (seq > end) {
                 break;
             }
-            if (started) {
-                if (isDebug) {
-                    trsc += ChangesetUtils.stripTrscSeqNum(textLine) + "\n";
-                } else {
-                    trsc += textLine + "\n";
-                }
+        }
+
+        if (started) {
+            if (isDebug) {
+                trsc += ChangesetUtils.stripTrscSeqNum(textLine) + "\n";
+            } else {
+                trsc += textLine + "\n";
             }
         }
     }

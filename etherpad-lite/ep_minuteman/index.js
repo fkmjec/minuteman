@@ -94,7 +94,7 @@ async function appendTranscript(utterance) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
         let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
         if (isDebug) {
-            summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${trscChunk.text}`;
+            summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${SUMMARY_IN_PROGRESS}`;
         }
         await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end, isDebug);

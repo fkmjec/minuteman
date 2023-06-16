@@ -2,7 +2,7 @@ const TranscriptUtils = require("./TranscriptUtils");
 const SummaryUtils = require("./SummaryUtils");
 
 // TODO: move this to config somewhere
-MAX_TOKEN_LEN = 512;
+MAX_WORD_LEN = 512;
 
 class TranscriptChunk {
     constructor (text, len, start, end, seq) {
@@ -120,7 +120,7 @@ class SummaryStore {
      */
     appendUtterance(utterance) {
         if (!this.startedChunks[utterance.sessionId]) {
-            this.startedChunks[utterance.sessionId] = new TranscriptChunker(MAX_TOKEN_LEN);
+            this.startedChunks[utterance.sessionId] = new TranscriptChunker(MAX_WORD_LEN);
         }
         const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);
         return possibleChunk;

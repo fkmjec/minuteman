@@ -46,7 +46,7 @@ async function addUtteranceToPad(trscPad, utterance, isDebug) {
     padMessageHandler.updatePadClients(trscPad);
 }
 
-async function addSummaryToPad(sessionId, summarySeq, text, isDebug) {
+async function addSummaryToPad(sessionId, summarySeq, text) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
@@ -94,7 +94,7 @@ async function appendTranscript(utterance) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
         let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
         if (isDebug) {
-            summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${utterance.text}`;
+            summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${trscChunk.text}`;
         }
         await addSummaryToPad(sessionId, trscChunk.seq, summaryContent);
         const trscText = TranscriptUtils.getTrscSegment(trscPad, trscChunk.start, trscChunk.end, isDebug);

@@ -11,7 +11,8 @@ function getSummaryLines(atext, apool) {
             if (!summaries[seq]) {
                 summaries[seq] = textLine;
             } else {
-                throw new Error("Multiple summaries with same seq number in one document!");
+                summaries[seq] += "\n" + textLine;
+                console.info("Multiple summary lines with same seq number: " + seq);
             }
         }
     }

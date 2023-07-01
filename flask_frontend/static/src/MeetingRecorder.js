@@ -1,6 +1,11 @@
 import { TrackRecorder } from './TrackRecorder.js';
 
 
+function cleanRoomName(roomName) {
+    // TODO
+    return roomName.toLowerCase();
+}
+
 /**
  * main exported object of the file, holding all
  * relevant functions and variables for the outside world
@@ -222,12 +227,13 @@ MeetingRecorder.prototype.onConnectionFailed = function() {
 MeetingRecorder.prototype.onRoomSelect = function() {
     // get the input value from the roomSelect element
     let value = document.getElementById("roomSelect").value;
+    let roomName = cleanRoomName(value);
     // FIXME: inserting unsanitized values
     if (this.connection != null) {
         this.connection.disconnect();
     }
-    this.options.bosh = 'https://meet.jit.si/http-bind?room=' + value;
-    this.options.roomName = value;
+    this.options.bosh = 'https://meet.jit.si/http-bind?room=' + roomName;
+    this.options.roomName = roomName;
     this.connect(this.options);
 }
 

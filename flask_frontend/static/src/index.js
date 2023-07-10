@@ -8,13 +8,10 @@ function onChunkLenSelect() {
     ApiInterface.setChunkLen(chunkLen);
 }
 
-const initOptions = {
-    disableAudioLevels: true
-}; 
 let recorder = new MeetingRecorder();
 
 
-recorder.initJitsi(initOptions);
+// recorder.initJitsi({});
 
 $(window).bind('beforeunload', recorder.unload.bind(recorder));
 $(window).bind('unload', recorder.unload.bind(recorder));

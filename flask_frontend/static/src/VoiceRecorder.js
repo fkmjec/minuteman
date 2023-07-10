@@ -16,7 +16,6 @@ class VoiceRecorder extends AudioWorkletProcessor {
     constructor(options) {
         super();
 
-
         this.savedVoiceData = [];
         this.converter = null;
         if (options && options.processorOptions) {

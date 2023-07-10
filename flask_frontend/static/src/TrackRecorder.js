@@ -12,7 +12,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
     /**
      * @param track The JitsiTrack the object is going to hold
      */
-    constructor(track, maxUtteranceLen) {
+    constructor(track, audioContext) {
         // The JitsiTrack holding the stream
         this.track = track;
 
@@ -20,40 +20,28 @@ const SENT_CHUNK_LEN = 1.0; // seconds
         // not unique
         this.name = null;
 
-        // maximum utterance length in seconds, i.e. the longest stored sequence of chunks
-        this.maxUtteranceLen = maxUtteranceLen;
-        this.audioContext = new AudioContext();
+        this.audioContext = audioContext;
 
         const originalStream = track.getOriginalStream();
-        
-        // merge the (usually stereo) audio tracks into one
-        // FIXME: into a special function?
-        this.mergedTracksDestination = new MediaStreamAudioDestinationNode(this.audioContext, { channelCount: 1 });
-        this.inNodes = [];
-        originalStream.getAudioTracks().forEach(t => {
-            console.info(t);
-            let inNode = this.audioContext.createMediaStreamTrackSource(t);
-            this.inNodes.push(inNode);
-            inNode.connect(this.mergedTracksDestination);
-        });
-        this.mergedStreamSource = this.audioContext.createMediaStreamSource(this.mergedTracksDestination.stream);
-        
+        const originalStreamNode = this.audioContext.createMediaStreamSource(originalStream);
+
         this.audioContext.audioWorklet.addModule("/static/dist/VoiceRecorder.js").then(() => {            
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
-                    targetSampleRate: 16000, // TODO make this smaller and figure out decimation
-                    sentChunkLen: SENT_CHUNK_LEN, // TODO constant
+                    targetSampleRate: 16000,
+                    sentChunkLen: SENT_CHUNK_LEN,
                 }
             });
             this.voiceRecorder.port.onmessage = (e) => this.sendActiveData(e.data);
-            this.mergedStreamSource.connect(this.voiceRecorder);
+            originalStreamNode.connect(this.voiceRecorder);
         }).catch((e) => console.error(e));
-        console.info(this.audioContext.sampleRate);
     }
     
     stop() {
-        this.voiceRecorder.port.postMessage("stop");
+        if (this.voiceRecorder !== undefined) {
+            this.voiceRecorder.port.postMessage("stop");
+        }
         this.audioContext.close();
     }
 

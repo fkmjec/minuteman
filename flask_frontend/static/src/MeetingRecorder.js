@@ -2,7 +2,6 @@ import { TrackRecorder } from './TrackRecorder.js';
 
 
 function cleanRoomName(roomName) {
-    // TODO
     return roomName.toLowerCase();
 }
 
@@ -17,6 +16,11 @@ function MeetingRecorder() {
 
 
     this.confOptions = {
+        startSilent: false,
+
+        p2p: {
+            enabled: false
+        }
     };
     
     this.connection = null;
@@ -30,7 +34,7 @@ function MeetingRecorder() {
             muc: 'conference.meet.jit.si'
         },
         roomName: '',
-        bosh: ''
+        serviceUrl: '',
     };
 }
 
@@ -44,14 +48,19 @@ MeetingRecorder.prototype.addTrack = function(track) {
     console.info("Adding track in MeetingRecorder");
     if (track.isAudioTrack()) {
         // create the track recorder
-        const trackRecorder = new TrackRecorder(track);
+        const trackRecorder = new TrackRecorder(track, this.audioContext);
 
         // push it to the local array of all recorders
-
         this.recorders.push(trackRecorder);
+        let participant = track.getParticipantId();
 
         // update the name of the trackRecorders
         this.updateNames();
+
+        // add a silent audio playing element because of damned Chrome-based browsers
+        $('body').append(
+            `<audio autoplay='1' muted='true' id='${participant}audio' />`);
+        track.attach($(`#${participant}audio`)[0]);
     }
 };
 
@@ -83,6 +92,11 @@ MeetingRecorder.prototype.removeTrack = function(track) {
         }
     }
 
+    // remove silent element from background
+    const element = document.getElementById(track.getParticipantId() + "audio");
+    if (element) {
+        element.outerHTML = "";
+    }
     // make sure the names are up to date
     this.updateNames();
 };
@@ -146,7 +160,6 @@ MeetingRecorder.prototype.connect = function() {
     this.room = this.connection.initJitsiConference(this.options.roomName, this.confOptions);
     this.room.setDisplayName("Minuteman")
     this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
-    // TODO: stop recording on removed tracks?
     this.room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
         console.info(`track removed!!!${track}`);
         this.onRemoveRemoteTrack(track);
@@ -180,6 +193,7 @@ MeetingRecorder.prototype.connect = function() {
         // only record outside and audio tracks
         return;
     }
+
     this.addTrack(track);
 }
 
@@ -225,15 +239,19 @@ MeetingRecorder.prototype.onConnectionFailed = function() {
 }
 
 MeetingRecorder.prototype.onRoomSelect = function() {
+    const initOptions = {
+        disableAudioLevels: true
+    };
+    this.initJitsi(initOptions);
     // get the input value from the roomSelect element
     let value = document.getElementById("roomSelect").value;
     let roomName = cleanRoomName(value);
-    // FIXME: inserting unsanitized values
     if (this.connection != null) {
         this.connection.disconnect();
     }
-    this.options.bosh = 'https://meet.jit.si/http-bind?room=' + roomName;
+    this.options.serviceUrl = 'wss://meet.jit.si/xmpp-websocket?room=' + roomName;
     this.options.roomName = roomName;
+    this.audioContext = new AudioContext();
     this.connect(this.options);
 }
 

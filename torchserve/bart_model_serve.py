@@ -40,7 +40,6 @@ class TransformersClassifierHandler(BaseHandler):
 
     def preprocess(self, data):
         """ Very basic preprocessing code - only tokenizes. 
-            Extend with your own preprocessing steps as needed.
         """
         text = data[0].get("data")
         if text is None:

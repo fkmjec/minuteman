@@ -38,7 +38,7 @@ services:
       - rabbitmq
   
   # torchserve:
-  #   build: ./torchserve_whisper
+  #   build: ./torchserve
   #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
   #   volumes:
   #    - ./torch_model_dir:/torch_model_dir
@@ -60,7 +60,6 @@ services:
     volumes:
       - db:/var/lib/postgres/data
       - ./flask_frontend/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
-
   etherpad:
     build: ./etherpad-lite
     ports:

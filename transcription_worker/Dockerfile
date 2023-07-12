@@ -1,5 +1,5 @@
 # build step to produce a leaner image
-FROM python:3.10-slim as builder
+FROM tensorflow/tensorflow:devel-gpu as builder
 
 WORKDIR /app
 
@@ -9,8 +9,8 @@ ENV PYTHONUNBUFFERED 1
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
-# final stage
-FROM python:3.10-slim
+# final stage, tensorflow for correct GPU support (probably can be done smarter)
+FROM tensorflow/tensorflow:devel-gpu
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 

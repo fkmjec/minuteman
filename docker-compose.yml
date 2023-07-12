@@ -39,7 +39,7 @@ services:
   
   # torchserve:
   #   build: ./torchserve
-  #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar whisper=whisper-base.mar
+  #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar
   #   volumes:
   #    - ./torch_model_dir:/torch_model_dir
   #    - ./torch-config.cnf:/torch-config.cnf

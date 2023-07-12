@@ -26,6 +26,15 @@ services:
     command: python transcription_worker.py
     depends_on:
       - rabbitmq
+    # uncomment this if not mocked and you want to use a GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
   
   summ-worker:
     build: ./summarization_worker
@@ -37,6 +46,7 @@ services:
     depends_on:
       - rabbitmq
   
+  # uncomment for model running in TorchServe. For local developments, it is turned off.
   # torchserve:
   #   build: ./torchserve
   #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar

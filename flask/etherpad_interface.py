@@ -27,8 +27,6 @@ class PadInterface:
 
     def create_session(self, session_id, debug=False):
         # creates a pad for the transcript and a pad for the summary
-        # TODO: do I want to put the pads in a separate group?
-        # TODO: error handling here
         transcript_pad_id = self._get_trsc_pad_id(session_id)
         summ_pad_id = self._get_summ_pad_id(session_id)
         self.pad.createPad(transcript_pad_id, "Works with a transcript!")
@@ -64,7 +62,6 @@ class PadInterface:
     
 
     def get_minutes(self, pad_id):
-        # TODO maybe rework this together with a better api in ep_minuteman
         summary_pad_id = self._get_summ_pad_id(pad_id)
         html = self.pad.getHtml(summary_pad_id)["html"]
         soup = BeautifulSoup(html)

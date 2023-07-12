@@ -7,7 +7,6 @@ import view_utils
 import config
 from models import DBInterface
 from flask import Flask, jsonify, render_template, request, redirect, url_for, abort
-from forms import TranscriptInputForm
 from extensions import db
 import numpy as np
 import pika
@@ -26,16 +25,14 @@ db.init_app(app)
 db_interface = DBInterface(app_config)
 editor_interface = etherpad_interface.PadInterface(app_config)
 
-# FIXME: this should be more structured
+# initialize loggers
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
-
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
     if not db_interface.session_exists(session_id):
         abort(404)
-    # past_utterances = db_interface.get_past_utterances(session_id)
     return render_template("index.html", title="Minuteman", session_id=session_id, etherpad_url=app_config.etherpad_url)
 
 

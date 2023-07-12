@@ -224,17 +224,13 @@ MeetingRecorder.prototype.onConnectionFailed = function() {
  MeetingRecorder.prototype.disconnect = function() {
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-        // FIXME: does this make sense?
         this.onConnectionSuccess.bind(this));
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_FAILED,
-        // FIXME: does this make sense?
         this.onConnectionFailed.bind(this));
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
-        // FIXME: does this make sense?
         this.disconnect.bind(this));
-    // TODO remove all references to audio recording
     this.stop();
 }
 

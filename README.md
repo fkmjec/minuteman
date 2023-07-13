@@ -33,14 +33,32 @@ When the setup step is complete, the user can connect the app to a meeting. Audi
 ### Audio frontend
 Sound recording is handled from the Javascript code in `flask_frontend/static` part of the project. Dependencies are managed through `npm` and the code with dependencies is packed into two files using `webpack`. A single exception to the dependency management is the `lib-jitsi-meet` library that is not up to date in the node package index and is distributed through a link.
 
-The recording is based on the modern javascript Web Audio API. Upon connecting to a meeting, an `AudioContext` object is created for the recording, which handles all sound processing for the page. The recording itself is handled by an 
+The source is split into four files: `index.js`, `MeetingRecorder.js`, `TrackRecorder.js` and `VoiceRecorder.js`. The `index.js` file contains the entry point for the app. We use the `lib-jitsi-meet` library to connect to the Jitsi meeting on user request; the code handling the connection and user joining is placed in the `MeetingRecorder` class. A `TrackRecorder` object is  created for each audio track,. Each of the recorders creates its own `VoiceRecorder` audio worklet for recording audio data in floats, and connects the audio track from the meeting to it. Audio worklets are a method for Javascript audio processing to run in separate threads and not block UI processing. `VoiceRecorder` needs to be included as a separate module, therefore we bundle it into a separate file for serving.
 
-The source is split into four files: \path{index.js}, \path{MeetingRecorder.js}, \path{TrackRecorder.js} and \path{VoiceRecorder.js}. The \path{index.js} file contains the entry point for the app. We use the \texttt{lib-jitsi-meet} library to connect to the Jitsi meeting on user request; the code handling the connection and user joining is placed in the \texttt{MeetingRecorder} class. A \texttt{TrackRecorder} object is  created for each audio track,. Each of the recorders creates its own \texttt{VoiceRecorder} audio worklet\footnote{\url{developer.mozilla.org/en-US/docs/Web/API/AudioWorklet}} for recording audio data in floats, and connects the audio track from the meeting to it. Audio worklets are a method for Javascript audio{VoiceRecorder} needs to be included as a separate module, we bundle it into a separate file for serving.
-
-Audio data is collected at the default sample rate from Jitsi and is then decimated using the \texttt{@alexanderolsen/libsamplerate-js}\footnote{\url{github.com/aolsenjazz/libsamplerate-js}} library) to 16000Hz. Recorded one-second long chunks are sent to the \texttt{TrackRecorder} object from the VoiceRecorder and then sent over a HTTP API to the Flask frontend. They are accompanied with the \texttt{TrackRecorder} \texttt{recorder\_id}, which uniquely identifies an audio track in a meeting, and \texttt{session\_id}, which identifies the session.
+Audio data is collected at the default sample rate from Jitsi and is then decimated using the `@alexanderolsen/libsamplerate-js` library to 16000Hz. Recorded one-second long chunks are sent to the `TrackRecorder` object from the `VoiceRecorder` and then sent over a HTTP API to the Flask API. They are accompanied with the `TrackRecorder` `recorder_id`, which uniquely identifies an audio track in a meeting, and `session_id`, which identifies the session.
 
 When implementing the recorders, we ran into compatibility issues across Firefox and Chrome browsers, with VoiceRecorder only recording zeros in Chrome-based browsers. We found out that Web Audio API in Chrome requires the track to be connected to an audio element for data to flow from the audio tracks into the recorders. This does not happen in Firefox, where the audio is streamed through the Web Audio API processing graph even upon not playing on the page. We work around this by creating muted audio elements in the page when a new audio track is added.
- processing to run in different threads, thus they are not slowing down the main thread handling the user interface. As \texttt
-###
+ processing to run in different threads, thus they are not slowing down the main thread handling the user interface.
 
+
+### Flask API
+The Flask API handles requests from the clients' browsers. It has three main responsibilities:
+* creating the editors and initializing a session when a user creates one
+* forwarding audio chunks sent by the frontend to RabbiMQ for transcription
+* handling changes in the application config and forwarding requests to change to other components (mainly the editor)
+
+## Running the application
+TODO
+
+## Configuration in docker-compose.yml
+TODO
+
+## Adding a new transcription worker
+TODO
+
+## Adding a new summarization worker
+TODO
+
+## Adding a new model to TorchServe
+TODO
  

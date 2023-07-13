@@ -11,9 +11,6 @@ from extensions import db
 import numpy as np
 import pika
 
-TARGET_SAMPLE_RATE = 16000
-SRC_SAMPLE_RATE = 44100.0
-
 app = Flask(__name__)
 # load config from env variables
 app_config = config.Config()
@@ -51,14 +48,14 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/set_chunk_len/<session_id>", methods=["POST"])
+@app.route("/minuting/<session_id>/set_chunk_len/", methods=["POST"])
 def set_chunk_len(session_id):
     chunk_len = request.form.get("chunk_len")
     editor_interface.set_chunk_len(session_id, chunk_len)
     return jsonify({"status_code": 200, "message": "ok"})
 
 
-@app.route("/transcribe/<session_id>", methods=["POST"])
+@app.route("/minuting/<session_id>/transcribe/", methods=["POST"])
 def transcribe(session_id):
     float_array = []
     timestamp = view_utils.datetime_from_iso(request.form.get("timestamp"))
@@ -72,7 +69,6 @@ def transcribe(session_id):
         float_array.append(float_value)
 
     float_array = np.array(float_array)
-    # float_array = signal.resample_poly(float_array, TARGET_SAMPLE_RATE)
     chunk = view_utils.create_audio_chunk(session_id, author, recorder_id, timestamp, float_array)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()
@@ -80,3 +76,4 @@ def transcribe(session_id):
     channel.basic_publish(exchange='', routing_key='audio_chunk_queue', body=view_utils.serialize_dict(chunk))
     connection.close()
     return jsonify({"status_code": 200, "message": "ok"})
+    

@@ -7,7 +7,7 @@ function getSessionId() {
 
 function getTranscriptionApiURL(sessionId) {
     // TODO: fix by passing values from the server?
-    return window.location.origin + "/transcribe/" + sessionId
+    return window.location.origin + "/minuting/" + sessionId + "/transcribe/"
 }
 
 function sendAudioData(audioData, startTime, author, recorderId) {
@@ -30,7 +30,7 @@ function setChunkLen(chunkLen) {
     let data = new FormData();
     let sessionId = getSessionId();
     data.append('chunk_len', chunkLen);
-    let apiUrl = window.location.origin + "/set_chunk_len/" + sessionId;
+    let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_chunk_len/";
     const request = new Request(apiUrl, {
         method: 'POST',
         body: data,

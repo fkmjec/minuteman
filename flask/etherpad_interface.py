@@ -29,9 +29,10 @@ class PadInterface:
         # creates a pad for the transcript and a pad for the summary
         transcript_pad_id = self._get_trsc_pad_id(session_id)
         summ_pad_id = self._get_summ_pad_id(session_id)
+        self._create_session_object(session_id, config)
         self.pad.createPad(transcript_pad_id, "Works with a transcript!")
         self.pad.createPad(summ_pad_id, "Works with a summary!")
-        self._create_session_object(session_id, config)
+
 
     def set_chunk_len(self, session_id, chunk_len):
         url = self.config.etherpad_api_url + "/setChunkLen"
@@ -50,7 +51,7 @@ class PadInterface:
         data = {
             "apikey": self.config.etherpad_api_key,
             "session_id": session_id,
-            "config": config.serialize()
+            "config": config.get_dict()
         }
         requests.post(url, headers=headers, data=json.dumps(data))
 
@@ -60,19 +61,26 @@ class PadInterface:
         url = self.config.etherpad_api_url + "/sessionConfig"
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            print(response)
+            # print(response)
             raise ValueError("Could not get session config")        
         return response.json()
     
 
-    # def set_session_config(self, session_id, config):
-    #     data = {
-    #         # "apikey": self.config.etherpad_api_key,
-    #         "session_id": session_id,
-    #         "config": config,
-    #     }
-    #     url = self.config.etherpad_api_url + "/sessionConfig"
-    #     response = requests.post(url, params=params)
-    #     if response.status_code != 200:
-    #         raise ValueError("Could not set session config")
-    #     return response.json()
+    def set_summ_model(self, session_id, summ_model):
+        url = self.config.etherpad_api_url + "/setSummModel"
+        params = {}
+        data = {
+            "session_id": session_id,
+            "summ_model": summ_model,
+        }
+        requests.post(url, params=params, data=data)
+    
+
+    def set_recording_status(self, session_id, status):
+        url = self.config.etherpad_api_url + "/setRecordStatus"
+        params = {}
+        data = {
+            "session_id": session_id,
+            "record_status": status,
+        }
+        requests.post(url, params=params, data=data)

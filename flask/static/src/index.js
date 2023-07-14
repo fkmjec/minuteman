@@ -9,6 +9,12 @@ function onChunkLenSelect() {
     ApiInterface.setChunkLen(chunkLen);
 }
 
+function onModelSelect() {
+    let model = $("#modelSelect").val();
+    console.info(model);
+    ApiInterface.setSummModel(model);
+}
+
 let recorder = new MeetingRecorder();
 
 
@@ -21,6 +27,7 @@ window.recorder = recorder;
 
 $(window).bind
 window.onChunkLenSelect = onChunkLenSelect;
+window.onModelSelect =  onModelSelect;
 
 setInterval(async function() {
     try {
@@ -29,4 +36,4 @@ setInterval(async function() {
     } catch (error) {
         console.error(error.message);
     }
-}, 1000);
+}, 5000);

@@ -29,7 +29,7 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 
 # FIXME: what is the default summarization model? we do not know automatically yet
-default_session_config = view_utils.SessionConfig(200, False, "bart")
+default_session_config = view_utils.SessionConfig(200, False, "bart", False)
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
@@ -45,9 +45,15 @@ def new_minuting():
     debug = debug == "on"
     config = copy.deepcopy(default_session_config)
     config.debug = debug
+    # for local debugging purposes
+    if not app_config.mock_ml_models:
+        default_model = view_utils.get_torchserve_available_models(app_config.torch_management_url)[0]
+    else:
+        default_model = "bart"
+    config.summ_model_id = default_model
     id = view_utils.get_random_id(20)
-    db_interface.create_minuteman_session(id, view_utils.get_current_time())
     editor_interface.create_session(id, config)
+    db_interface.create_minuteman_session(id, view_utils.get_current_time())
     return redirect(url_for('minuting', session_id=id))
 
 
@@ -61,6 +67,23 @@ def set_chunk_len(session_id):
     chunk_len = request.form.get("chunk_len")
     editor_interface.set_chunk_len(session_id, chunk_len)
     return jsonify({"status_code": 200, "message": "ok"})
+
+
+@app.route("/minuting/<session_id>/set_summ_model/", methods=["POST"])
+def set_summ_model(session_id):
+    print("setting summ model")
+    summ_model = request.form.get("summ_model")
+    # local debugging purposes
+    if not app_config.mock_ml_models:
+        model_selection = view_utils.get_torchserve_available_models(app_config.torch_management_url)
+    else:
+        model_selection = ["bart", "t5", "gpt2"]
+    if summ_model not in model_selection:
+        return jsonify({"status_code": 400, "message": "Unavailable model"})
+    else:
+        print("model getting")
+        editor_interface.set_summ_model(session_id, summ_model)
+        return jsonify({"status_code": 200, "message": "ok"})
 
 
 @app.route("/minuting/<session_id>/transcribe/", methods=["POST"])
@@ -94,5 +117,6 @@ def get_state(session_id):
     else:
         # mocking for development purposes
         model_selection = ["bart", "t5", "gpt2"]
-
+    print(session_config)
     return jsonify({"status_code": 200, "message": "ok", "config": session_config, "model_selection": model_selection})
+

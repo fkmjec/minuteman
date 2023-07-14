@@ -1,3 +1,4 @@
+import ApiInterface from './ApiInterface.js';
 import { TrackRecorder } from './TrackRecorder.js';
 
 
@@ -172,6 +173,7 @@ MeetingRecorder.prototype.connect = function() {
     });
     this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
     this.room.join();
+    // ApiInterface.setActiveStatus(true);
 }
 
 
@@ -231,6 +233,7 @@ MeetingRecorder.prototype.onConnectionFailed = function() {
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         this.disconnect.bind(this));
+    // ApiInterface.setActiveStatus(false);
     this.stop();
 }
 

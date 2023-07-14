@@ -6,7 +6,6 @@ function getSessionId() {
 }
 
 function getTranscriptionApiURL(sessionId) {
-    // TODO: fix by passing values from the server?
     return window.location.origin + "/minuting/" + sessionId + "/transcribe/"
 }
 
@@ -20,18 +19,6 @@ function sendAudioData(audioData, startTime, author, recorderId) {
     data.append('chunk', blob);
     let api_url = getTranscriptionApiURL(sessionId);
     const request = new Request(api_url, {
-        method: 'POST',
-        body: data,
-    });
-    fetch(request);
-}
-
-function setChunkLen(chunkLen) {
-    let data = new FormData();
-    let sessionId = getSessionId();
-    data.append('chunk_len', chunkLen);
-    let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_chunk_len/";
-    const request = new Request(apiUrl, {
         method: 'POST',
         body: data,
     });
@@ -52,4 +39,41 @@ async function getState() {
     return {config: json.config, model_selection: json.model_selection};
 }
 
-export default { sendAudioData, setChunkLen, getState };
+// FIXME: code duplication here
+function setChunkLen(chunkLen) {
+    let data = new FormData();
+    let sessionId = getSessionId();
+    data.append('chunk_len', chunkLen);
+    let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_chunk_len/";
+    const request = new Request(apiUrl, {
+        method: 'POST',
+        body: data,
+    });
+    fetch(request);
+}
+
+function setSummModel(summModel) {
+    let data = new FormData();
+    let sessionId = getSessionId();
+    data.append('summ_model', summModel);
+    let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_summ_model/";
+    const request = new Request(apiUrl, {
+        method: 'POST',
+        body: data,
+    });
+    fetch(request);
+}
+
+// function setActiveStatus(status) {
+//     let data = new FormData();
+//     let sessionId = getSessionId();
+//     data.append('status', status);
+//     let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_summ_model/";
+//     const request = new Request(apiUrl, {
+//         method: 'POST',
+//         body: data,
+//     });
+//     fetch(request);
+// }
+
+export default { sendAudioData, setChunkLen, setSummModel, getState };

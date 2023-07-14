@@ -12,10 +12,12 @@ class SessionConfig:
         chunk_len,
         debug,
         summ_model_id,
+        connected
     ) -> None:
         self.chunk_len = chunk_len
         self.debug =  debug
         self.summ_model_id = summ_model_id
+        self.connected = connected
 
     def validate(self):
         # TODO 
@@ -27,16 +29,25 @@ class SessionConfig:
             chunk_len = temp_dict["chunk_len"]
             debug = temp_dict["debug"] == "true"
             summ_model_id = temp_dict["summ_model_id"]
+            connected = temp_dict["connected"]
         except KeyError as e:
             raise ValueError(f"SessionConfig json string missing key: {e}")
-        return SessionConfig(chunk_len, debug, summ_model_id)
+        return SessionConfig(chunk_len, debug, summ_model_id, connected)
 
+    def get_dict(self):
+        dict = {}
+        dict["chunk_len"] = self.chunk_len
+        dict["debug"] = self.debug
+        dict["summ_model_id"] = self.summ_model_id
+        dict["connected"] = self.connected
+        return dict
 
     def serialize(self):
         config_dict = {
             "chunk_len": self.chunk_len,
             "debug": self.debug,
-            "summ_model_id": self.summ_model_id
+            "summ_model_id": self.summ_model_id,
+            "connected": self.connected
         }
         return json.dumps(config_dict)
 

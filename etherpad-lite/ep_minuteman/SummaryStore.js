@@ -74,6 +74,7 @@ class SummarySession {
         this.summaries = {};
         this.currentUserSummSeq = 1000;
         this.debug = debug
+        this.summaryModel = "bart";
         this.connected = false;
     }
 
@@ -112,7 +113,9 @@ class SummaryStore {
      */
     createSession(sessionId, config) {
         this.sessions[sessionId] = new SummarySession(config.debug);
-        this.startedChunks[sessionId] = new TranscriptChunker(config.chunkLen);
+        this.startedChunks[sessionId] = new TranscriptChunker(config.chunk_len);
+        this.sessions[sessionId].connected = config.connected;
+        this.sessions[sessionId].model = config.summ_model_id;
     }
 
     /**
@@ -121,18 +124,22 @@ class SummaryStore {
      * @returns a transcript chunk if the utterance caused a chunk to be completed, null otherwise
      */
     appendUtterance(utterance) {
-        if (!this.startedChunks[utterance.sessionId]) {
-            this.startedChunks[utterance.sessionId] = new TranscriptChunker(MAX_WORD_LEN);
-        }
+        // if (!this.startedChunks[utterance.sessionId]) {
+        //     this.startedChunks[utterance.sessionId] = new TranscriptChunker(MAX_WORD_LEN);
+        // }
         const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);
         return possibleChunk;
     }
 
     setChunkLen(sessionId, len) {
-        if (!this.startedChunks[sessionId]) {
-            this.startedChunks[sessionId] = new TranscriptChunker(len);
-        }
+        // if (!this.startedChunks[sessionId]) {
+        //     this.startedChunks[sessionId] = new TranscriptChunker(len);
+        // }
         this.startedChunks[sessionId].maxWordLen = len;
+    }
+
+    setModel(sessionId, summModel) {
+        this.sessions[sessionId].model = summModel;
     }
 
     /**
@@ -238,7 +245,7 @@ class SummaryStore {
         return {
             debug: session.debug,
             chunkLen: this.startedChunks[sessionId].maxWordLen,
-            summModel: session.summModel,
+            summModel: session.model,
             connected: session.connected
         }
     }

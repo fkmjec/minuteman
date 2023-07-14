@@ -1,4 +1,4 @@
-function populateSelect(target, values){
+function populateSelect(target, values, currentOption){
     if (!target){
         return false;
     }
@@ -12,11 +12,12 @@ function populateSelect(target, values){
             opt.innerHTML = values[i];
             select.appendChild(opt);
         }
+        select.value = currentOption;
     }
 }
 
 function updateConfigOptions(config, modelOptions) {
-    populateSelect('modelSelect', modelOptions);
+    populateSelect('modelSelect', modelOptions, config.summModel);
 }
 
 export default { updateConfigOptions }; 

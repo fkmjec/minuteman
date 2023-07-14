@@ -4,7 +4,6 @@ import urllib.parse
 import transcript
 
 SUMM_MODEL_NAME = "bart"
-TRANSCRIBE_MODEL_NAME = "whisper"
 
 # the class to hold config and create requests for the underlying TorchServe backend
 class TorchInterface:
@@ -37,20 +36,3 @@ class TorchInterface:
     def _prepare_request_data_audio(self, audio_data):
         files = {'data': ('model_input.audio', audio_data)}
         return files
-
-
-    def _transcribe_audio(self, audio_data):
-        files = self._prepare_request_data_audio(audio_data)
-        transcription_addr = self._construct_model_address(TRANSCRIBE_MODEL_NAME)
-        if self.mock_ml_models:
-            logging.debug(f"Transcription to {transcription_addr} mocked!")
-            return "Transcript mock!"
-        else:
-            logging.debug(f"Making transcription request to {transcription_addr}")
-            response = requests.post(transcription_addr, files=files)
-            return response.text
-
-
-    def transcribe_chunk(self, chunk):
-        transcribed_text = self._transcribe_audio(chunk)
-        return transcribed_text

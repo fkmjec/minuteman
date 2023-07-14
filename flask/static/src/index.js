@@ -1,5 +1,6 @@
 import MeetingRecorder from "./MeetingRecorder";
 import ApiInterface from "./ApiInterface";
+import ConfigUtils from "./ConfigUtils";
 
 // JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
 
@@ -20,3 +21,12 @@ window.recorder = recorder;
 
 $(window).bind
 window.onChunkLenSelect = onChunkLenSelect;
+
+setInterval(async function() {
+    try {
+        let response = await ApiInterface.getState();
+        ConfigUtils.updateConfigOptions(response.config, response.model_selection);
+    } catch (error) {
+        console.error(error.message);
+    }
+}, 1000);

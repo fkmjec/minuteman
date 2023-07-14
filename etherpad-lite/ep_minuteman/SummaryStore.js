@@ -74,6 +74,7 @@ class SummarySession {
         this.summaries = {};
         this.currentUserSummSeq = 1000;
         this.debug = debug
+        this.connected = false;
     }
 
     /**
@@ -109,8 +110,9 @@ class SummaryStore {
      * @param {*} sessionId the id of the session
      * @param {*} debug whether the session is in debug mode or not
      */
-    createSession(sessionId, debug) {
-        this.sessions[sessionId] = new SummarySession(debug);
+    createSession(sessionId, config) {
+        this.sessions[sessionId] = new SummarySession(config.debug);
+        this.startedChunks[sessionId] = new TranscriptChunker(config.chunkLen);
     }
 
     /**
@@ -140,17 +142,17 @@ class SummaryStore {
      * @param {*} summaryContent the content of the summary
      */
     addSummary (sessionId, trscChunk, summaryContent) {
-        if (!this.sessions[sessionId]) {
-            this.createSession(sessionId, false);
-        }
+        // if (!this.sessions[sessionId]) {
+        //     this.createSession(sessionId, false);
+        // }
         const summarySeq = trscChunk.seq;
         this.sessions[sessionId].addSummary(summarySeq, trscChunk.start, trscChunk.end, trscChunk.text, summaryContent);
     }
 
     addUserSelectedSummary(sessionId, startSeq, endSeq, summarySource, summaryContent) {
-        if (!this.sessions[sessionId]) {
-            this.createSession(sessionId, false);
-        }
+        // if (!this.sessions[sessionId]) {
+        //     this.createSession(sessionId, false);
+        // }
         const summId = this.sessions[sessionId].currentUserSummSeq;
         this.sessions[sessionId].currentUserSummSeq += 1;
         this.sessions[sessionId].addSummary(summId, startSeq, endSeq, summarySource, summaryContent);
@@ -164,9 +166,9 @@ class SummaryStore {
      * @param {*} summaryContent the new content of the summary
      */
     updateSummaryContent (sessionId, summarySeq, summaryContent) {
-        if (!this.sessions[sessionId]) {
-            this.createSession(sessionId, false);
-        }
+        // if (!this.sessions[sessionId]) {
+        //     this.createSession(sessionId, false);
+        // }
         if (!this.sessions[sessionId].summaries[summarySeq]) {
             console.info(`intended to update summary ${summarySeq} but it does not exist`);
             return;
@@ -181,9 +183,9 @@ class SummaryStore {
      * @returns a list of summaries to update
      */
     updateTrsc (sessionId, pad) {
-        if (!this.sessions[sessionId]) {
-            this.createSession(sessionId, false);
-        }
+        // if (!this.sessions[sessionId]) {
+        //     this.createSession(sessionId, false);
+        // }
         const session = this.sessions[sessionId];
         const summaries = session.summaries;
         const summariesToUpdate = [];
@@ -224,6 +226,21 @@ class SummaryStore {
      */
     freeze (sessionId, summarySeq) {
         this.sessions[sessionId].freeze(summarySeq);
+    }
+
+    /**
+     * Gets the session configuration for synchronization between clients
+     * @param {*} sessionId
+     * @returns the session configuration
+     */
+    getSessionConfig (sessionId) {
+        const session = this.sessions[sessionId];
+        return {
+            debug: session.debug,
+            chunkLen: this.startedChunks[sessionId].maxWordLen,
+            summModel: session.summModel,
+            connected: session.connected
+        }
     }
 }
 

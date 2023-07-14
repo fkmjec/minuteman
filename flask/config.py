@@ -9,5 +9,6 @@ class Config():
         self.etherpad_api_key = os.environ["ETHERPAD_API_KEY"]
         self.etherpad_api_url = os.environ["ETHERPAD_API_URL"]
         self.etherpad_url = os.environ["ETHERPAD_URL"]
+        self.torch_management_url = os.environ["TORCHSERVE_MANAGEMENT_URL"]
         # TODO: from variables? by model?
         self.max_input_len = 512

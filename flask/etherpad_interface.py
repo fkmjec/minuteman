@@ -25,13 +25,13 @@ class PadInterface:
         else:
             raise ValueError("Incorrect pad_id that does not end with .summ or .trcs")
 
-    def create_session(self, session_id, debug=False):
+    def create_session(self, session_id, config):
         # creates a pad for the transcript and a pad for the summary
         transcript_pad_id = self._get_trsc_pad_id(session_id)
         summ_pad_id = self._get_summ_pad_id(session_id)
         self.pad.createPad(transcript_pad_id, "Works with a transcript!")
         self.pad.createPad(summ_pad_id, "Works with a summary!")
-        self._create_session_object(session_id, debug=debug)
+        self._create_session_object(session_id, config)
 
     def set_chunk_len(self, session_id, chunk_len):
         url = self.config.etherpad_api_url + "/setChunkLen"
@@ -44,30 +44,35 @@ class PadInterface:
         requests.post(url, params=params, data=data)
 
 
-    def _create_session_object(self, session_id, debug):
+    def _create_session_object(self, session_id, config):
         url = self.config.etherpad_api_url + "/createSessionObject"
         headers = {"Content-Type": "application/json"}
         data = {
             "apikey": self.config.etherpad_api_key,
             "session_id": session_id,
-            "debug": debug
+            "config": config.serialize()
         }
         requests.post(url, headers=headers, data=json.dumps(data))
 
 
-    def get_transcript(self, pad_id):
-        transcript_pad_id = self._get_trsc_pad_id(pad_id)
-        transcript = self.pad.getText(transcript_pad_id)
-        return transcript["text"]
+    def get_session_config(self, session_id):
+        params = { "session_id": session_id }
+        url = self.config.etherpad_api_url + "/sessionConfig"
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            print(response)
+            raise ValueError("Could not get session config")        
+        return response.json()
     
 
-    def get_minutes(self, pad_id):
-        summary_pad_id = self._get_summ_pad_id(pad_id)
-        html = self.pad.getHtml(summary_pad_id)["html"]
-        soup = BeautifulSoup(html)
-        summary_spans = soup.find_all("span", class_="summary")
-        summary_spans_processed = []
-        for summary_span in summary_spans:
-            classes = summary_span["class"]
-            summary_spans_processed.append((classes[1], summary_span.text))
-        return summary_spans_processed
+    # def set_session_config(self, session_id, config):
+    #     data = {
+    #         # "apikey": self.config.etherpad_api_key,
+    #         "session_id": session_id,
+    #         "config": config,
+    #     }
+    #     url = self.config.etherpad_api_url + "/sessionConfig"
+    #     response = requests.post(url, params=params)
+    #     if response.status_code != 200:
+    #         raise ValueError("Could not set session config")
+    #     return response.json()

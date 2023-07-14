@@ -15,11 +15,17 @@
                 <li class="control-bar-item">
                     Minuteman
                 </li>
-                <li class="control-bar-item chunk-len-select">
-                    <span>Summarization chunk length (words):</span>
-                    <input id="chunkLenSelect" type="number" min="1" max="1000" value="200"/>
-                    <input type="button" value="Set" onclick="onChunkLenSelect()"/>
-                </li>
+                <span class="config-options">
+                    <li class="control-bar-item chunk-len-select">
+                        <span>Summarization chunk length (words):</span>
+                        <input id="chunkLenSelect" type="number" min="1" max="1000" value="200"/>
+                        <input type="button" value="Set" onclick="onChunkLenSelect()"/>
+                    </li>
+                    <li class="control-bar-item summ-model-select">
+                        <span>Model:</span>
+                        <select name="modelSelect" id="modelSelect" type="select"/>
+                        </select>
+                </span>
                 <li class="control-bar-item jitsi-select">
                     <span>meet.jit.si room name:</span>
                     <input id="roomSelect" ></input>

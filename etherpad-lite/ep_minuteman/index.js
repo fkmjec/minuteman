@@ -137,7 +137,7 @@ async function connectToRabbitMQ() {
             console.log("Successfully connected to rabbitmq")
             return connection;
         } catch (err) {
-            console.error(err);
+            console.error(err.message);
             retries += 1;
             if (retries > MAX_RABBITMQ_RETRIES) {
                 console.error("Failed to connect to rabbitmq server");
@@ -161,7 +161,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         const fields = await new Promise((resolve, reject) => {
             new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
         });
-        // TODO: check api key?
         const sessionId = fields.session_id;
         const start = fields.start;
         const end = fields.end;
@@ -201,10 +200,33 @@ exports.expressCreateServer = function(hook, args, cb) {
             return;
         }
         const sessionId = parsed.session_id;
-        const debug = parsed.debug;
+        const config = parsed.config;
+        console.info(config);
+        const debug = config.debug;
         console.info(`Creating session object for session ${sessionId} with debug ${debug}`);
-        summaryStore.createSession(sessionId, debug);
+        summaryStore.createSession(sessionId, config);
         res.status(200).send("OK");
+    });
+
+    args.app.get("/api/sessionConfig", async (req, res) => {
+        const sessionId = req.query.session_id;
+        if (!summaryStore.sessions[sessionId]) {
+            res.status(400).send("Session does not exist");
+            return;
+        }
+        const config = summaryStore.getSessionConfig(sessionId);
+        console.info(`Getting session config for session ${sessionId}`);
+        res.status(200).send(config);
+    });
+
+    args.app.post("/api/sessionConfig", async (req, res) => {
+        const sessionId = req.query.session_id;
+        if (!summaryStore.sessions[sessionId]) {
+            res.status(400).send("Session does not exist");
+            return;
+        }
+        // TODO
+        res.status(200);    
     });
 
     cb();

@@ -38,4 +38,18 @@ function setChunkLen(chunkLen) {
     fetch(request);
 }
 
-export default { sendAudioData, setChunkLen };
+async function getState() {
+    let sessionId = getSessionId();
+    let apiUrl = window.location.origin + "/minuting/" + sessionId + "/get_state/";
+    const request = new Request(apiUrl, {
+        method: 'GET',
+    });
+    const response = await fetch(request);
+    const json = await response.json();
+    if (response.status != 200) {
+        throw new Error("Invalid response from the API while getting state");
+    }
+    return {config: json.config, model_selection: json.model_selection};
+}
+
+export default { sendAudioData, setChunkLen, getState };

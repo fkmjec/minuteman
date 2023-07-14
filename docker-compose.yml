@@ -9,7 +9,8 @@ services:
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
       ETHERPAD_API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
       ETHERPAD_API_URL: "http://etherpad:9001/api"
-      ETHERPAD_URL: "http://etherpad:9001/"
+      ETHERPAD_URL: "http://localhost:9001"
+      TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085/"
       PYTHONBUFFERED: 1
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
     depends_on: 
@@ -40,7 +41,6 @@ services:
     build: ./summarization_worker
     environment:
       MOCK_ML_MODELS: "true"
-      BART_MODEL: "bart-large-xsum"
       TORCH_BACKEND_URL: "http://torchserve:8084"
     command: python summarization_worker.py
     depends_on:

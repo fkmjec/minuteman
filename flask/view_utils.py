@@ -59,7 +59,7 @@ def get_torchserve_available_models(torch_url):
     if response.status_code != 200:
         raise ValueError("Could not get available models")
     models = response.json()["models"]
-    models = map(lambda x: x["modelName"], models)
+    models = list(map(lambda x: x["modelName"], models))
     return models
 
 

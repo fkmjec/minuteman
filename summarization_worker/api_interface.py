@@ -3,7 +3,7 @@ import requests
 import urllib.parse
 import transcript
 
-SUMM_MODEL_NAME = "bart"
+# SUMM_MODEL_NAME = "bart"
 
 # the class to hold config and create requests for the underlying TorchServe backend
 class TorchInterface:
@@ -18,18 +18,20 @@ class TorchInterface:
         files = {'data': ('model_input.txt', model_input_string)}
         return files
 
-    def summarize_block(self, input_string):
+    def summarize_block(self, input_string, model_name):
         trsc = transcript.Transcript.from_automin(input_string)
         trsc.kartik_clean()
         trsc = trsc.raw_str()
         files = self._prepare_request_data_files(trsc)
-        summ_addr = self._construct_model_address(SUMM_MODEL_NAME)
+        summ_addr = self._construct_model_address(model_name)
         if self.mock_ml_models:
             logging.debug(f"Summarization req to {summ_addr} mocked!")
             return "Summary mock!"
         else:
             logging.debug(f"Making transcription request to {summ_addr}")
             response = requests.post(summ_addr, files=files)
+            if response.status_code != 200:
+                return "summarization unsuccessfull due to model error"
             return response.text
 
 

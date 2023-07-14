@@ -68,7 +68,9 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = false) {
+    const model = summaryStore.sessions[sessionId].model;
     const chunk = {
+        model: model,
         session_id: sessionId,
         summary_seq: summarySeq,
         text: text,

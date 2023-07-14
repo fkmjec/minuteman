@@ -19,7 +19,6 @@ REQUEST_SEQ = 0
 logging.basicConfig(level=logging.INFO)
 
 def summarize(api_obj, input_string, model):
-    # TODO: check length of input string in tokens
     return api_obj.summarize_block(input_string, model)
 
 
@@ -43,9 +42,7 @@ def process_input(api_obj, body, logger, tokenizer):
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
-    trsc = transcript.Transcript.from_automin(text)
-    trsc.kartik_clean()
-    result = f"{summarize(api_obj, trsc, model)}"
+    result = f"{summarize(api_obj, text, model)}"
     send_summarized(session_id, summary_seq, result)
     logger.info(deserialized)
 

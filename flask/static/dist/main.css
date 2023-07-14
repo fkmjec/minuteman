@@ -84,3 +84,7 @@ body.application {
 .create-session-button:hover {
     background-color: #d65c5c;
 }
+
+#chunkLenSelect {
+    width: 6em;
+}

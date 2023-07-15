@@ -3,8 +3,8 @@ from transformers import AutoModelForSeq2SeqLM
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--from_path", type=str, help="where to load the model from")
-parser.add_argument("--save_to", type=str, help="where to save the resulting model")
+parser.add_argument("--from_path", type=str, required=True, help="where to load the model from")
+parser.add_argument("--save_to", type=str, required=True, help="where to save the resulting model")
 
 
 if __name__ == "__main__":

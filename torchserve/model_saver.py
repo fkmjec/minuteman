@@ -3,7 +3,7 @@ from transformers import AutoModelForSeq2SeqLM
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--from_path", type=str, required=True, help="where to load the model from")
+parser.add_argument("--model_name", type=str, required=True, help="The model name, for example facebook/bart-large-xsum")
 parser.add_argument("--save_to", type=str, required=True, help="where to save the resulting model")
 
 

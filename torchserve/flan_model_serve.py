@@ -10,6 +10,8 @@ from ts.torch_handler.base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
 
+# change this if you want to use a different model
+MODEL_NAME = "google/flan-t5-large"
 
 class TransformersClassifierHandler(BaseHandler):
     """
@@ -28,8 +30,8 @@ class TransformersClassifierHandler(BaseHandler):
         self.device = torch.device("cuda:" + str(properties.get("gpu_id")) if torch.cuda.is_available() else "cpu")
 
         # Read model serialize/pt file
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-xsum")
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_dir, load_in_8bit=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
         self.model.to(self.device)
         self.model.eval()
@@ -50,7 +52,6 @@ class TransformersClassifierHandler(BaseHandler):
         inputs = self.tokenizer.encode_plus(
             sentences,
             add_special_tokens=True,
-            truncation=True,
             return_tensors="pt"
         )
         return inputs

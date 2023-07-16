@@ -42,7 +42,6 @@ const SENT_CHUNK_LEN = 1.0; // seconds
         if (this.voiceRecorder !== undefined) {
             this.voiceRecorder.port.postMessage("stop");
         }
-        this.audioContext.close();
     }
 
     /**

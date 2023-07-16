@@ -204,7 +204,6 @@ MeetingRecorder.prototype.onRemoveRemoteTrack = function(track) {
     this.removeTrack(track);
 }
 
-
 /**
  *
  * @param id

@@ -124,21 +124,28 @@ class SummaryStore {
      * @returns a transcript chunk if the utterance caused a chunk to be completed, null otherwise
      */
     appendUtterance(utterance) {
-        // if (!this.startedChunks[utterance.sessionId]) {
-        //     this.startedChunks[utterance.sessionId] = new TranscriptChunker(MAX_WORD_LEN);
-        // }
+        if (!this.startedChunks[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);
         return possibleChunk;
     }
 
     setChunkLen(sessionId, len) {
-        // if (!this.startedChunks[sessionId]) {
-        //     this.startedChunks[sessionId] = new TranscriptChunker(len);
-        // }
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
+
         this.startedChunks[sessionId].maxWordLen = len;
     }
 
     setModel(sessionId, summModel) {
+        if (!this.startedChunks[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         this.sessions[sessionId].model = summModel;
     }
 
@@ -149,17 +156,19 @@ class SummaryStore {
      * @param {*} summaryContent the content of the summary
      */
     addSummary (sessionId, trscChunk, summaryContent) {
-        // if (!this.sessions[sessionId]) {
-        //     this.createSession(sessionId, false);
-        // }
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         const summarySeq = trscChunk.seq;
         this.sessions[sessionId].addSummary(summarySeq, trscChunk.start, trscChunk.end, trscChunk.text, summaryContent);
     }
 
     addUserSelectedSummary(sessionId, startSeq, endSeq, summarySource, summaryContent) {
-        // if (!this.sessions[sessionId]) {
-        //     this.createSession(sessionId, false);
-        // }
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         const summId = this.sessions[sessionId].currentUserSummSeq;
         this.sessions[sessionId].currentUserSummSeq += 1;
         this.sessions[sessionId].addSummary(summId, startSeq, endSeq, summarySource, summaryContent);
@@ -173,9 +182,10 @@ class SummaryStore {
      * @param {*} summaryContent the new content of the summary
      */
     updateSummaryContent (sessionId, summarySeq, summaryContent) {
-        // if (!this.sessions[sessionId]) {
-        //     this.createSession(sessionId, false);
-        // }
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         if (!this.sessions[sessionId].summaries[summarySeq]) {
             console.error(`intended to update summary ${summarySeq} but it does not exist`);
             return;
@@ -190,9 +200,10 @@ class SummaryStore {
      * @returns a list of summaries to update
      */
     updateTrsc (sessionId, pad) {
-        // if (!this.sessions[sessionId]) {
-        //     this.createSession(sessionId, false);
-        // }
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         const session = this.sessions[sessionId];
         const summaries = session.summaries;
         const summariesToUpdate = [];
@@ -216,6 +227,10 @@ class SummaryStore {
      * @param {*} pad 
      */
     freezeSummaries (sessionId, pad) {
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         const summaries = SummaryUtils.getSummariesFromPad(pad);
         for (const [summarySeq, newSumm] of Object.entries(summaries)) {
             const oldSumm = this.sessions[sessionId].summaries[summarySeq].summary;
@@ -232,6 +247,10 @@ class SummaryStore {
      * @param {*} summarySeq 
      */
     freeze (sessionId, summarySeq) {
+        if (!this.sessions[sessionId]) {
+            console.error(`Session ${sessionId} not found!`);
+            return;
+        }
         this.sessions[sessionId].freeze(summarySeq);
     }
 

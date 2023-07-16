@@ -81,7 +81,6 @@ def set_summ_model(session_id):
     if summ_model not in model_selection:
         return jsonify({"status_code": 400, "message": "Unavailable model"})
     else:
-        print("model getting")
         editor_interface.set_summ_model(session_id, summ_model)
         return jsonify({"status_code": 200, "message": "ok"})
 
@@ -111,12 +110,16 @@ def transcribe(session_id):
 
 @app.route("/minuting/<session_id>/get_state/", methods=["GET"])
 def get_state(session_id):
-    session_config = editor_interface.get_session_config(session_id)
+    try:
+        session_config = editor_interface.get_session_config(session_id)
+    except ValueError:
+        # FIXME: This is here as a placeholder for old sessions, so that the error messages
+        # do not cover up all other output
+        pass
     if not app_config.mock_ml_models:
         model_selection = view_utils.get_torchserve_available_models(app_config.torch_management_url)
     else:
         # mocking for development purposes
         model_selection = ["bart", "t5", "gpt2"]
-    print(session_config)
     return jsonify({"status_code": 200, "message": "ok", "config": session_config, "model_selection": model_selection})
 

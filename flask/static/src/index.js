@@ -11,7 +11,6 @@ function onChunkLenSelect() {
 
 function onModelSelect() {
     let model = $("#modelSelect").val();
-    console.info(model);
     ApiInterface.setSummModel(model);
 }
 

@@ -12,7 +12,7 @@ function getSummaryLines(atext, apool) {
                 summaries[seq] = textLine;
             } else {
                 summaries[seq] += "\n" + textLine;
-                console.info("Multiple summary lines with same seq number: " + seq);
+                console.error("Multiple summary lines with same seq number: " + seq);
             }
         }
     }

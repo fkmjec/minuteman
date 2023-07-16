@@ -173,7 +173,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         const seq = summaryStore.addUserSelectedSummary(sessionId, start, end, source, summaryInProgressText);
         await addSummaryToPad(sessionId, seq, summaryInProgressText);
         await sendChunkToSummarize(sessionId, seq, source, false);
-        console.info(`Creating summary for session ${sessionId} from ${start} to ${end}`);
         res.status(200).send("OK");
     });
 
@@ -185,7 +184,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         const chunkLen = fields.chunk_len;
         if (chunkLen > 0) {
             summaryStore.setChunkLen(sessionId, chunkLen);
-            console.info(`Setting chunk length of ${sessionId} to ${chunkLen}`);
             res.status(200).send("OK");
         } else {
             res.status(400).send("Invalid chunk length");
@@ -196,7 +194,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         const fields = await new Promise((resolve, reject) => {
             new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
         });
-        // TODO check api key
         const sessionId = fields.session_id;
         const summModel = fields.summ_model;
         summaryStore.setModel(sessionId, summModel);
@@ -212,7 +209,6 @@ exports.expressCreateServer = function(hook, args, cb) {
         const chunkLen = fields.chunk_len;
         if (chunkLen > 0) {
             summaryStore.setChunkLen(sessionId, chunkLen);
-            console.info(`Setting chunk length of ${sessionId} to ${chunkLen}`);
             res.status(200).send("OK");
         } else {
             res.status(400).send("Invalid chunk length");
@@ -226,14 +222,12 @@ exports.expressCreateServer = function(hook, args, cb) {
         try {
             parsed = req.body;
             config = req.body.config;
-            console.info(req.body);
         } catch (err) {
             logger.error(err.message);
             res.status(400).send("Invalid JSON");
             return;
         }
         const sessionId = parsed.session_id;
-        console.info(config);
         const debug = config.debug;
         console.info(`Creating session object for session ${sessionId} with debug ${debug}`);
         summaryStore.createSession(sessionId, config);
@@ -247,8 +241,6 @@ exports.expressCreateServer = function(hook, args, cb) {
             return;
         }
         const config = summaryStore.getSessionConfig(sessionId);
-        console.info(config);
-        console.info(`Getting session config for session ${sessionId}`);
         res.status(200).send(config);
     });
 

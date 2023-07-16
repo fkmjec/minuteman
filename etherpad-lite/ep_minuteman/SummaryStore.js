@@ -177,7 +177,7 @@ class SummaryStore {
         //     this.createSession(sessionId, false);
         // }
         if (!this.sessions[sessionId].summaries[summarySeq]) {
-            console.info(`intended to update summary ${summarySeq} but it does not exist`);
+            console.error(`intended to update summary ${summarySeq} but it does not exist`);
             return;
         }
         this.sessions[sessionId].summaries[summarySeq].summary = summaryContent;

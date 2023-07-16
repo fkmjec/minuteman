@@ -4,12 +4,12 @@ services:
   flask:
     build: ./flask
     environment:
-      MOCK_ML_MODELS: "true"
+      MOCK_ML_MODELS: "false"
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
-      ETHERPAD_API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
+      ETHERPAD_API_KEY: "[YOUR ETHERPAD API KEY]"
       ETHERPAD_API_URL: "http://etherpad:9001/api"
-      ETHERPAD_URL: "http://localhost:9001"
+      ETHERPAD_URL: "https://etherpad.kmjec.cz"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
@@ -22,44 +22,41 @@ services:
   trsc-worker:
     build: ./transcription_worker
     environment:
-      MOCK_ML_MODELS: "true"
-      WHISPER_MODEL: "base.en"
+      MOCK_ML_MODELS: "false"
+      WHISPER_MODEL: "medium.en"
     command: python transcription_worker.py
     depends_on:
       - rabbitmq
-    # uncomment this if not mocked and you want to use a GPU
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
   
   summ-worker:
     build: ./summarization_worker
     environment:
-      MOCK_ML_MODELS: "true"
+      MOCK_ML_MODELS: "false"
       TORCH_BACKEND_URL: "http://torchserve:8084"
     command: python summarization_worker.py
     depends_on:
       - rabbitmq
-  
-  # uncomment for model running in TorchServe. For local developments, it is turned off.
-  # torchserve:
-  #   build: ./torchserve
-  #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar
-  #   volumes:
-  #    - ./torch_model_dir:/torch_model_dir
-  #    - ./torch-config.cnf:/torch-config.cnf
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [gpu]
+
+  torchserve:
+    build: ./torchserve
+    command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models flan-t5=flan-t5-base-samsum.mar bart=lidiya-bart.mar
+    volumes:
+     - ./torch_model_dir:/torch_model_dir
+     - ./torch-config.cnf:/torch-config.cnf
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   postgres:
     image: 'postgres'
@@ -78,7 +75,7 @@ services:
     environment:
       TITLE: Minuteman
       DEFAULT_PAD_TEXT: "Welcome to Minuteman!"
-      ADMIN_PASSWORD: ETHERPAD_ADMIN_PASSWORD
+      ADMIN_PASSWORD: kalsfdjalkvcdjcslajads
       ADMIN_USER: admin
       DB_TYPE: postgres
       DB_HOST: postgres
@@ -87,8 +84,6 @@ services:
       DB_PASS: postgres
       DB_NAME: postgres
       DB_CHARSET: utf8mb4
-      API_KEY: "10de317b2865d6f9fe8aa6704fa530f301582e8c65ee6b590c280c974cda13db"
-      MINUTEMAN_API_URL: "http://web-backend:7777/"
     depends_on:
       - postgres
       - rabbitmq
@@ -97,9 +92,6 @@ services:
     image: rabbitmq
     volumes:
       - ./rabbitmq:/var/lib/rabbitmq
-    ports:
-      - 5672:5672
-      - 15672:15672
 
 volumes:
   db:

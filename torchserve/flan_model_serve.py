@@ -11,7 +11,7 @@ from ts.torch_handler.base_handler import BaseHandler
 logger = logging.getLogger(__name__)
 
 # change this if you want to use a different model
-MODEL_NAME = "google/flan-t5-large"
+MODEL_NAME = "google/flan-t5-base"
 
 class TransformersClassifierHandler(BaseHandler):
     """

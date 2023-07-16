@@ -144,7 +144,6 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, logge
             logger.debug(f"Transcript {i}: {segment.text}")
         utterance_text = f"{author}: {utterance_text}\n"
         if len(utterance_text) > 0:
-            # FIXME: how should this be done properly?
             utterance = {
                 "utterance": utterance_text,
                 "session_id": session_id,

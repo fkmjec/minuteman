@@ -1,0 +1,103 @@
+version: '3.9'
+
+services:
+  flask:
+    build: ./flask
+    environment:
+      MOCK_ML_MODELS: "true"
+      POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
+      FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
+      ETHERPAD_API_KEY: ""
+      ETHERPAD_API_URL: "http://etherpad:9001/api"
+      ETHERPAD_URL: "http://localhost:9001"
+      TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
+      PYTHONBUFFERED: 1
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
+    depends_on: 
+      - rabbitmq
+      - postgres
+    ports:
+      - 7777:7777
+
+  trsc-worker:
+    build: ./transcription_worker
+    environment:
+      MOCK_ML_MODELS: "true"
+      WHISPER_MODEL: "base.en"
+    command: python transcription_worker.py
+    depends_on:
+      - rabbitmq
+    # uncomment this if not mocked and you want to use a GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  
+  summ-worker:
+    build: ./summarization_worker
+    environment:
+      MOCK_ML_MODELS: "true"
+      TORCH_BACKEND_URL: "http://torchserve:8084"
+    command: python summarization_worker.py
+    depends_on:
+      - rabbitmq
+  
+  # uncomment for model running in TorchServe. For local developments, it is turned off.
+  # torchserve:
+  #   build: ./torchserve
+  #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=bart-large-xsum.mar
+  #   volumes:
+  #    - ./torch_model_dir:/torch_model_dir
+  #    - ./torch-config.cnf:/torch-config.cnf
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+
+  postgres:
+    image: 'postgres'
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db:/var/lib/postgres/data
+      - ./flask/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+  etherpad:
+    build: ./etherpad-lite
+    ports:
+      - 9001:9001
+    environment:
+      TITLE: Minuteman
+      ADMIN_PASSWORD: [YOUR ETHERPAD ADMIN PASSWORD]
+      ADMIN_USER: admin
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: postgres
+      DB_CHARSET: utf8mb4
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+volumes:
+  db:
+    driver: local

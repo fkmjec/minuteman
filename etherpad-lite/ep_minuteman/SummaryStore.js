@@ -124,8 +124,8 @@ class SummaryStore {
      * @returns a transcript chunk if the utterance caused a chunk to be completed, null otherwise
      */
     appendUtterance(utterance) {
-        if (!this.startedChunks[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+        if (!this.startedChunks[utterance.sessionId]) {
+            console.error(`Session ${utterance.sessionId} not found!`);
             return;
         }
         const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);

@@ -4,25 +4,29 @@ services:
   flask:
     build: ./flask
     environment:
+      # OPTION: if torchserve is not running, this must be kept to "true". This turns off the polling for available models
       MOCK_ML_MODELS: "false"
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
+      # TODO: supply your flask secret key here; generate a long random string and paste it here
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
-      ETHERPAD_API_KEY: "[YOUR ETHERPAD API KEY]"
       ETHERPAD_API_URL: "http://etherpad:9001/api"
-      ETHERPAD_URL: "https://etherpad.kmjec.cz"
+      # TODO: set this to the domain where you will be running your etherpad instance. To be reliable,
+      # it should be on the same domain as the Flask frontend to enable iframing of the editor.
+      ETHERPAD_URL: "[YOUR_ETHERPAD_URL]"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
     depends_on: 
       - rabbitmq
       - postgres
+    # OPTION: set the running port for the application.
     ports:
       - 7777:7777
 
   trsc-worker:
     build: ./transcription_worker
     environment:
-      MOCK_ML_MODELS: "false"
+      # OPTION: you can select a more or less powerful model here if needed and possible with your hardware
       WHISPER_MODEL: "medium.en"
     command: python transcription_worker.py
     depends_on:
@@ -38,6 +42,7 @@ services:
   summ-worker:
     build: ./summarization_worker
     environment:
+      # OPTION: when set to true, this replaces requests to torchserve models with a mock string
       MOCK_ML_MODELS: "false"
       TORCH_BACKEND_URL: "http://torchserve:8084"
     command: python summarization_worker.py
@@ -46,6 +51,7 @@ services:
 
   torchserve:
     build: ./torchserve
+    # OPTION: you can provide additional models here if you created them
     command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models flan-t5=flan-t5-base-samsum.mar bart=lidiya-bart.mar
     volumes:
      - ./torch_model_dir:/torch_model_dir
@@ -74,8 +80,8 @@ services:
       - 9001:9001
     environment:
       TITLE: Minuteman
-      DEFAULT_PAD_TEXT: "Welcome to Minuteman!"
-      ADMIN_PASSWORD: kalsfdjalkvcdjcslajads
+      # TODO: set the Etherpad admin password
+      ADMIN_PASSWORD: [YOUR ADMIN PASSWORD]
       ADMIN_USER: admin
       DB_TYPE: postgres
       DB_HOST: postgres

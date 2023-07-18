@@ -16,8 +16,6 @@ import threading
 from queue import Queue
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
-MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"] == "true"
-TOKENIZER = "facebook/bart-large-xsum"
 MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
@@ -126,7 +124,7 @@ class Transcripts:
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
 
-def handle_request(body, speech_detector, tokenizer, backend, transcripts, logger):
+def handle_request(body, speech_detector, backend, transcripts, logger):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
     session_id = deserialized.get_session_id()
     recorder_id = deserialized.get_recorder_id()
@@ -162,11 +160,10 @@ def handle_request(body, speech_detector, tokenizer, backend, transcripts, logge
 def init_worker(queue, transcripts):
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     backend = faster_whisper.WhisperModel(WHISPER_MODEL)
-    tokenizer = transformers.BartTokenizer.from_pretrained(TOKENIZER)
     logger = get_logger("__worker__")
     while True:
         body = queue.get()
-        handle_request(body, speech_detector, tokenizer, backend, transcripts, logger)
+        handle_request(body, speech_detector, backend, transcripts, logger)
 
 
 def get_rabbitmq_connection():

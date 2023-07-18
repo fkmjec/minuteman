@@ -4,11 +4,11 @@ services:
   flask:
     build: ./flask
     environment:
-      # if torchserve is not running, this must be kept to "true"
+      # OPTION: if torchserve is not running, this must be kept to "true". This turns off the polling for available models
       MOCK_ML_MODELS: "true"
       POSTGRES_DB_URL: "postgresql://postgres:postgres@postgres:5432/"
+      # TODO: supply your flask secret key here; generate a long random string and paste it here
       FLASK_SECRET_KEY: "[YOUR_SECRET_KEY]"
-      ETHERPAD_API_KEY: ""
       ETHERPAD_API_URL: "http://etherpad:9001/api"
       ETHERPAD_URL: "http://localhost:9001"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
@@ -17,13 +17,13 @@ services:
     depends_on: 
       - rabbitmq
       - postgres
+    # OPTION: set the running port for the application.
     ports:
       - 7777:7777
 
   trsc-worker:
     build: ./transcription_worker
     environment:
-      MOCK_ML_MODELS: "true"
       # OPTION: you can select a more powerful model here if needed and possible with your hardware
       WHISPER_MODEL: "base.en"
     command: python transcription_worker.py
@@ -49,7 +49,7 @@ services:
     depends_on:
       - rabbitmq
   
-  # uncomment for model running in TorchServe. For local developments, we turn this off by default, as we did not have access to a GPU.
+  # OPTION: uncomment for model running in TorchServe. For local developments, we turn this off by default, as we did not have access to a GPU.
   # torchserve:
   #   build: ./torchserve
   #   command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models name=[.mar archive path in torch_model_dir] 
@@ -80,6 +80,7 @@ services:
       - 9001:9001
     environment:
       TITLE: Minuteman
+      # TODO: set the Etherpad admin password
       ADMIN_PASSWORD: [YOUR ETHERPAD ADMIN PASSWORD]
       ADMIN_USER: admin
       DB_TYPE: postgres

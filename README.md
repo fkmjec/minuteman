@@ -1,3 +1,4 @@
+# Minuteman
 Minuteman is a tool to help users with meeting minuting (producing a summary of the meeting). It works with the JitSi meeting platform. The user connects the tool to a meeting, a transcript is generated and meeting minutes are iteratively being created. An example instance is available at `minuteman.kmjec.cz`. Currently supported languages are: English and we are working on supporting Czech.
 
 ![An example of the application in action](images/minuteman_fullscreen.png)
@@ -13,52 +14,47 @@ When you are done with the meeting, you can press the disconnect button in the c
 
 If you want to invite meeting participants into the session, just send them the link you are connected to. They will be able to correct the transcript together with you. Just warn them not to connect the tool again; that would mean two clients would be recording the meeting in paralell, resulting in a double transcription.
 
-## Developer documentation
-The application is designed in accordance with microservice principles. There are seven components:
-
-* The javascript frontend for recording the meeting located in `flask/static`
-* A Python Flask API in `flask` providing the gateway API for the application
-* An Etherpad editor plugin in `etherpad-lite`
-* A RabbitMQ messaging system in `rabbitmq`
-* A transcription worker in `transcription_worker` handling transcription of audio chunks comming from the Flask frontend
-* A summarization worker in `summarization_worker`
-* A TorchServe backend in `torchserve` responsible for running summarization models.
-
-The architecture and interaction is depicted in the chart below:
-![The Minuteman architecture](images/minuteman-architecture.drawio.png)
-When the user first opens the application page, a random 20-character long session identifier `session_id` is created. Two documents are then created in Etherpad: one with a `[session_id]`.trsc identifier for transcript storage and one with a `[session_id]`.summ for created summary points. We store the `session_id` in database to prevent double use of one identifier.
-
-When the setup step is complete, the user can connect the app to a meeting. Audio data is then sent to the Flask frontend, which processes the request and forwards the audio data to RabbitMQ. Audio data is processed by the transcription worker, which transcribes the audio and sends the produced utterances to the Etherpad editor plugin. The plugin saves the utterances to the editor, marking them with their sequence number in the editor. When enough utterances have been accumulated in the editor, it sends a request to the summarization worker with the section of the transcript which it wants summarized.
-
-### Audio frontend
-Sound recording is handled from the Javascript code in `flask_frontend/static` part of the project. Dependencies are managed through `npm` and the code with dependencies is packed into two files using `webpack`. A single exception to the dependency management is the `lib-jitsi-meet` library that is not up to date in the node package index and is distributed through a link.
-
-The source is split into four files: `index.js`, `MeetingRecorder.js`, `TrackRecorder.js` and `VoiceRecorder.js`. The `index.js` file contains the entry point for the app. We use the `lib-jitsi-meet` library to connect to the Jitsi meeting on user request; the code handling the connection and user joining is placed in the `MeetingRecorder` class. A `TrackRecorder` object is  created for each audio track,. Each of the recorders creates its own `VoiceRecorder` audio worklet for recording audio data in floats, and connects the audio track from the meeting to it. Audio worklets are a method for Javascript audio processing to run in separate threads and not block UI processing. `VoiceRecorder` needs to be included as a separate module, therefore we bundle it into a separate file for serving.
-
-Audio data is collected at the default sample rate from Jitsi and is then decimated using the `@alexanderolsen/libsamplerate-js` library to 16000Hz. Recorded one-second long chunks are sent to the `TrackRecorder` object from the `VoiceRecorder` and then sent over a HTTP API to the Flask API. They are accompanied with the `TrackRecorder` `recorder_id`, which uniquely identifies an audio track in a meeting, and `session_id`, which identifies the session.
-
-When implementing the recorders, we ran into compatibility issues across Firefox and Chrome browsers, with VoiceRecorder only recording zeros in Chrome-based browsers. We found out that Web Audio API in Chrome requires the track to be connected to an audio element for data to flow from the audio tracks into the recorders. This does not happen in Firefox, where the audio is streamed through the Web Audio API processing graph even upon not playing on the page. We work around this by creating muted audio elements in the page when a new audio track is added.
- processing to run in different threads, thus they are not slowing down the main thread handling the user interface.
-
-
-### Flask API
-The Flask API handles requests from the clients' browsers. It has three main responsibilities:
-* creating the editors and initializing a session when a user creates one
-* forwarding audio chunks sent by the frontend to RabbiMQ for transcription
-* handling changes in the application config and forwarding requests to change to other components (mainly the editor)
-
 ## Running the application
-TODO
+For running Minuteman, we provide two `docker compose` files. The configuration provided in `docker-compose-dev.yml` is targeted at running the tool locally without a GPU and the models in TorchServe. The configuration in `docker-compose.yml` is meant for running in a production environment, including the summarization models, and thus requires the GPU. In the `compose` files, configuration for the application components is specified using environment variables. Each optionally configurable variable is highlighted with a comment beginning with an `OPTION` comment, while the variables that are necessary to set before running are highlighted with the `TODO` comment.
 
-## Configuration in docker-compose.yml
-TODO
+The build process was tested using Docker version 24.0.2 and `docker compose` version 2.19.1.
 
-## Adding a new transcription worker
-TODO
+We first need to generate the Etherpad API key by running `create_apikey.sh`. Then, we fill out the required `TODO` fields in the respective `compose` file; specifically, it means setting the `FLASK_SECRET_KEY` in the Flask container and `ADMIN_PASSWORD` in the Etherpad container.  
+### Development
+For development, the only thing we need to do now is run the following commands:
+```
+docker compose -f docker-compose-dev.yml build
+docker compose -f docker-compose-dev.yml up
+```
+And after downloading the necessary containers and building the dependencies, we can open `localhost:7777` for the Minuteman title page. Note that on startup, starting RabbitMQ and Etherpad usually takes a while, so there will be error messages from the containers periodically trying to connect to the queue before RabbitMQ has had enough time to start. After the queue comes online, it will work normally.
+### Production
+For running in production, we need to download the summarization models. To do that, we run `download_summ_models.sh` in the `torch_model_dir` directory. We also need to set an additional option, `ETHERPAD_URL`, to the domain we have pointed to our Etherpad editors for iframing. After that, the commands to run are the same as for the development version, except with a different compose file.
+```
+docker compose -f docker-compose.yml build
+docker compose -f docker-compose.yml up
+```
+We need to note here that some modern browsers disable audio processing for non-localhost domains if the connection is not over HTTPS. Therefore, it is needed to request a certificate for your domain, perhaps from the LetsEncrypt project. Otherwise, the app will not work correctly.
 
-## Adding a new summarization worker
-TODO
+## Adding a New Model to TorchServe
+Minuteman makes it easy to add new summarization models by using TorchServe. When adding a new summarization model, it is necessary to create a model `.mar` archive for TorchServe to accept. The most common way of doing this is to download a model from HuggingFace and then creating the archive using `torch-model-archiver`.
 
-## Adding a new model to TorchServe
-TODO
- 
+To be able to create the archive, it is needed to install `torch-model-archiver`. It is available from PyPi. Then, it is necessary to create a handler file similar to the example handler in `torchserve/bart_model_serve.py`. It is generally only needed to alter the constant with the model name, as this downloads the correct tokenizer on startup.
+
+After that, the selected model can be downloaded from HuggingFace using the `transformers` library and the `torchserve/model_saver.py` script. This unfortunately requires PyTorch. To bypass this, it is possible to download the necessary files from selected the HuggingFace repository manually.
+
+To prepare the `.mar` archive containing the model, we run the following command:
+```
+torch-model-archiver 
+    --model-name [MODEL_NAME] 
+    --version 1.0
+    --serialized-file [pytorch_model.bin] 
+    --extra-files  "[config.json],[generation_config.json]"
+    --handler "[YOUR_HANDLER_FILE].py"    
+```
+We replace `MODEL_NAME` with the desired name of the archive and the other varibles with the paths of your downloaded model components. After running the command, you will be left with a `.mar` archive with the model. For usage, we need to move the created archive to `torch_model_dir` so that it is visible by the TorchServe docker container. In the `docker-compose.yml` file, we then specify the model and its name in the command to run torchserve like this: 
+```
+torchserve 
+    --start
+    --model-store torch_model_dir/
+    --models [NAME]=[MODEL_NAME].mar ...`
+```

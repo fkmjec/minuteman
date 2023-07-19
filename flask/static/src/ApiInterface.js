@@ -39,7 +39,6 @@ async function getState() {
     return {config: json.config, model_selection: json.model_selection};
 }
 
-// FIXME: code duplication here
 function setChunkLen(chunkLen) {
     let data = new FormData();
     let sessionId = getSessionId();

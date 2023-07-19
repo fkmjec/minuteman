@@ -115,11 +115,8 @@ MeetingRecorder.prototype.updateNames = function() {
             trackRecorder.name = 'Minuteman';
         } else {
             const id = trackRecorder.track.getParticipantId();
-            console.info(id);
             const participant = conference.getParticipantById(id);
-            console.info(participant);
             const newName = participant.getDisplayName();
-            console.info(newName);
 
             if (newName !== 'undefined') {
                 trackRecorder.name = newName;
@@ -162,7 +159,6 @@ MeetingRecorder.prototype.connect = function() {
     this.room.setDisplayName("Minuteman")
     this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
     this.room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
-        console.info(`track removed!!!${track}`);
         this.onRemoveRemoteTrack(track);
     });
     this.room.on(

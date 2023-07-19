@@ -17,7 +17,6 @@ class PadInterface:
         return pad_id + ".summ"
     
     def session_id_from_pad(self, pad_id):
-        print(pad_id)
         if pad_id.endswith(".trsc"):
             return pad_id[0:-5], "trsc"
         elif pad_id.endswith(".summ"):
@@ -61,7 +60,6 @@ class PadInterface:
         url = self.config.etherpad_api_url + "/sessionConfig"
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            # print(response)
             raise ValueError("Could not get session config")        
         return response.json()
     

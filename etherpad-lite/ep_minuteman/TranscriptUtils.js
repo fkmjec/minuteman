@@ -37,7 +37,6 @@ function getTrscSegmentCached (atext, apool, start, end, isDebug) {
  * @returns the transcript segment as string
  */
 exports.getTrscSegment = function (pad, start, end, isDebug) {
-    // FIXME: is this a valid way to acces the atext? Will it always be consistent?
     const atext = pad.atext;
     const apool = pad.apool();
     return getTrscSegmentCached(atext, apool, start, end, isDebug);

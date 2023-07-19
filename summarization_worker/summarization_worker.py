@@ -35,7 +35,7 @@ def send_summarized(session_id, summary_seq, summary_text):
     connection.close()
 
 
-def process_input(api_obj, body, logger, tokenizer):
+def process_input(api_obj, body, logger):
     #TODO: move computation to a worker thread
     deserialized = json.loads(body)
     model = deserialized["model"]
@@ -49,11 +49,9 @@ def process_input(api_obj, body, logger, tokenizer):
 
 def init_worker(queue):
     torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
-    # FIXME: tokenizer depends on the model, so this needs to be handled better
-    tokenizer = transformers.BartTokenizer.from_pretrained("facebook/bart-large-xsum")
     while True:
         body = queue.get()
-        process_input(torch_interface, body, logger, tokenizer)
+        process_input(torch_interface, body, logger)
 
 
 def callback(ch, method, properties, body):

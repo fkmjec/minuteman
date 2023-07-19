@@ -127,7 +127,6 @@ exports.getSummaryAppendChs = function(pad, summarySeq, summaryText) {
  */
 exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
     const atext = pad.atext;
-    // FIXME: is this cleaning needed?
     const apool = pad.apool();
     let oldText = pad.text();
     const text = newSummaryText;

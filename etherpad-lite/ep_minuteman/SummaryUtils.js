@@ -28,7 +28,6 @@ function getSummaryLines(atext, apool) {
  * @returns the transcript segment as string
  */
 exports.getSummariesFromPad = function (pad) {
-    // FIXME: is this a valid way to acces the atext? Will it always be consistent?
     const atext = pad.atext;
     const apool = pad.apool();
     return getSummaryLines(atext, apool);

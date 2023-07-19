@@ -28,7 +28,6 @@ editor_interface = etherpad_interface.PadInterface(app_config)
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 
-# FIXME: what is the default summarization model? we do not know automatically yet
 default_session_config = view_utils.SessionConfig(200, False, "bart", False)
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
@@ -113,7 +112,7 @@ def get_state(session_id):
     try:
         session_config = editor_interface.get_session_config(session_id)
     except ValueError:
-        # FIXME: This is here as a placeholder for old sessions, so that the error messages
+        # This is here as a placeholder for old sessions, so that the error messages
         # do not cover up all other output
         pass
     if not app_config.mock_ml_models:

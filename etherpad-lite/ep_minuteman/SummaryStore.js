@@ -211,8 +211,6 @@ class SummaryStore {
             const isDebug = session.debug;
             const newText = TranscriptUtils.getTrscSegment(pad, summaryObj.trscStart, summaryObj.trscEnd, isDebug);
             if (newText !== summaryObj.source && !session.isFrozen(summarySeq)) {
-                // update the source so that it is not updated a second time if the transcript is updated again in a different place
-                // FIXME: this is not ideal, if the request gets lost, it stops making sense.
                 summaryObj.source = newText;
                 summariesToUpdate.push(summaryObj);
             }

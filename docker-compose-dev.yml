@@ -13,7 +13,7 @@ services:
       ETHERPAD_URL: "http://localhost:9001"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
-    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 60
     depends_on: 
       - rabbitmq
       - postgres
@@ -98,7 +98,7 @@ services:
     image: rabbitmq
     volumes:
       - ./rabbitmq:/var/lib/rabbitmq
-    # OPTION: rabbitMQ ports are forwarded from the client by default, as it is often the case that you want to stream a transcript into the editor from an external script
+    # OPTION: rabbitMQ ports are forwarded to the host by default, as it is often the case that you want to stream a transcript into the editor from an external script
     ports:
       - 5672:5672
       - 15672:15672

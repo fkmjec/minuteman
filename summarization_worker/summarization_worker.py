@@ -36,7 +36,6 @@ def send_summarized(session_id, summary_seq, summary_text):
 
 
 def process_input(api_obj, body, logger):
-    #TODO: move computation to a worker thread
     deserialized = json.loads(body)
     model = deserialized["model"]
     session_id = deserialized["session_id"]

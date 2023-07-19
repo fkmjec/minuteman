@@ -45,7 +45,6 @@ class SpeechDetector:
             speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
             if speech_prob[0][0] > max_prob:
                 max_prob = speech_prob
-        logger.info(f"probability:{max_prob}")
         if max_prob > MAX_PROB_THR:
             return True
         return False
@@ -153,8 +152,6 @@ def handle_request(body, speech_detector, backend, transcripts, logger):
             channel.queue_declare("transcript_queue", durable=True)
             channel.basic_publish(exchange='', routing_key='transcript_queue', body=json.dumps(utterance))
             connection.close()
-    logger.info(" [x] Received %r" % deserialized.get_session_id())
-    logger.info(author)
 
 
 def init_worker(queue, transcripts):
@@ -188,7 +185,6 @@ def get_logger(name):
 def callback(ch, method, properties, body):
     queue.put(body)
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
 
 
 if __name__ == "__main__":

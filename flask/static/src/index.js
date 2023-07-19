@@ -35,4 +35,4 @@ setInterval(async function() {
     } catch (error) {
         console.error(error.message);
     }
-}, 1000);
+}, 5000);

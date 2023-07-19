@@ -15,7 +15,7 @@ services:
       ETHERPAD_URL: "[YOUR_ETHERPAD_URL]"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
-    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 600
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 60
     depends_on: 
       - rabbitmq
       - postgres

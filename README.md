@@ -19,7 +19,7 @@ For running Minuteman, we provide two `docker compose` files. The configuration 
 
 The build process was tested using Docker version 24.0.2 and `docker compose` version 2.19.1.
 
-We first need to generate the Etherpad API key by running `create_apikey.sh`. Then, we fill out the required `TODO` fields in the respective `compose` file; specifically, it means setting the `FLASK_SECRET_KEY` in the Flask container and `ADMIN_PASSWORD` in the Etherpad container.  
+We first need to generate the Etherpad API key and download a VAD model by running `init_app_files.sh`. Then, we fill out the required `TODO` fields in the respective `compose` file; specifically, it means setting the `FLASK_SECRET_KEY` in the Flask container and `ADMIN_PASSWORD` in the Etherpad container.  
 ### Development
 For development, the only thing we need to do now is run the following commands:
 ```

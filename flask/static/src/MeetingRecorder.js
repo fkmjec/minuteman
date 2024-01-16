@@ -31,8 +31,8 @@ function MeetingRecorder() {
     // TODO: transfer this to init constants somewhere
     this.options = {
         hosts: {
-            domain: 'meet.jit.si',
-            muc: 'conference.meet.jit.si'
+            domain: 'fairmeeting.net',
+            muc: 'muc.fairmeeting.net'
         },
         roomName: '',
         serviceUrl: '',
@@ -243,7 +243,7 @@ MeetingRecorder.prototype.onRoomSelect = function() {
     if (this.connection != null) {
         this.connection.disconnect();
     }
-    this.options.serviceUrl = 'wss://meet.jit.si/xmpp-websocket?room=' + roomName;
+    this.options.serviceUrl = 'wss://fairmeeting.net/xmpp-websocket?room=' + roomName;
     this.options.roomName = roomName;
     this.audioContext = new AudioContext();
     this.connect(this.options);

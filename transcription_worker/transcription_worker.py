@@ -13,7 +13,7 @@ import pika
 # import transformers
 from faster_whisper import vad
 from pika.adapters.blocking_connection import BlockingChannel
-from whisper_online import FasterWhisperASR, OnlineASRProcessor
+# from whisper_online import FasterWhisperASR, OnlineASRProcessor
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 200
@@ -232,7 +232,7 @@ def get_rabbitmq_connection():
     while retries < MAX_RABBITMQ_RETRIES:
         try:
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="rabbitmq")
+                pika.ConnectionParameters(host="localhost")
             )
             return connection
         except Exception as e:

@@ -1,4 +1,4 @@
-# import atexit
+import atexit
 import copy
 import logging
 import os
@@ -44,6 +44,7 @@ def get_rabbitmq_connection():
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(host="rabbitmq")
             )
+            logger.info("Connected to RabbitMQ")
             return connection
         except Exception as e:
             retries += 1
@@ -60,12 +61,12 @@ channel = connection.channel()
 channel.queue_declare("audio_chunk_queue")
 
 
-# def cleanup():
-#     channel.close()
-#     connection.close()
+def cleanup():
+    channel.close()
+    connection.close()
 
 
-# atexit.register(cleanup)
+atexit.register(cleanup)
 
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
@@ -151,6 +152,7 @@ def transcribe(session_id):
 
     global channel
     if not channel.is_open:
+        connection = get_rabbitmq_connection()
         channel = connection.channel()
         channel.queue_declare("audio_chunk_queue")
 

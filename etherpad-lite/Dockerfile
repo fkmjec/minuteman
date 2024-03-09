@@ -9,5 +9,5 @@ RUN ["chmod", "+x", "/opt/etherpad-lite/wait-for-it.sh"]
 RUN ["chmod", "+x", "/opt/etherpad-lite/entrypoint.sh"]
 COPY ep_minuteman ./ep_minuteman
 
-ENTRYPOINT ["./entrypoint.sh"]
+# ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "src/node/server.js"]

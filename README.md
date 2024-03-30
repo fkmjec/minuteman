@@ -1,6 +1,6 @@
 # Minuteman
 
-Minuteman is a tool to help users with meeting minuting (producing a summary of the meeting). It works with the JitSi meeting platform. The user connects the tool to a meeting, a transcript is generated and meeting minutes are iteratively being created. An example instance is available at `minuteman.kmjec.cz`. Currently supported languages are: English and we are working on supporting Czech.
+Minuteman is a tool to help users with meeting minuting (producing a summary of the meeting). It works with the JitSi meeting platform. The user connects the tool to a meeting, a transcript is generated and meeting minutes are iteratively being created. An example instance is available at `minuteman.kmjec.cz`. Currently supported languages are: English and we are working on supporting Czech. The system was developed under supervision of [doc. RNDr. Ondřej Bojar, Ph.D.](https://ufal.mff.cuni.cz/ondrej-bojar) at [Charles University](https://www.mff.cuni.cz/), read more in our paper: https://arxiv.org/abs/2309.05272
 
 ![An example of the application in action](images/minuteman_fullscreen.png)
 

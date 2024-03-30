@@ -4,6 +4,10 @@ Minuteman is a tool to help users with meeting minuting (producing a summary of 
 
 ![An example of the application in action](images/minuteman_fullscreen.png)
 
+## Current development
+
+This project is still actively developed. We are working on multilingual transcriptions/summaries and investigating the possibility to not rely on Fairmeeting (Jitsy) but rather allow any form of audio input while retaining decent speaker diarization.
+
 ## User documentation
 
 On the app main page, you will be greeted with instruction and a possibility to create a new session. Upon creating the session, you will be taken to a new page with a control bar and two editors. The control bar has an input field for you to enter a Jitsi room name. When you enter a room name from `fairmeeting.net` and hit `Select room`, a new meeting member will pop up in the meeting. It will record all the audio from the meeting participants and transcribe it in real time. The resulting transcript will appear live in the left editor.

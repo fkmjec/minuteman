@@ -41,7 +41,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
     decimate(data) {
         return this.converter.full(data);
     }
-    
+
     async createConverter () {
         console.info("creating converter");
         let converterType = ConverterType.SRC_SINC_FASTEST;
@@ -72,7 +72,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
         const lenInSec = totalLen / (this.targetSampleRate);
         return lenInSec >= this.sentChunkLen;
     }
-  
+
     process(inputList, outputList, parameters) {
         // Using the inputs (or not, as needed),
         // write the output into each of the outputs

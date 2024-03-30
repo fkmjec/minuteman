@@ -17,11 +17,11 @@ ENV PYTHONUNBUFFERED 1
 RUN addgroup --gid 1001 --system app && \
     adduser --shell /bin/false --disabled-password --uid 1001 --system --group app
 
-USER app
+# USER app
 
 WORKDIR ./app
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
 ENV PATH "$PATH:/home/app/.local/bin"
-RUN pip install --upgrade pip && pip install --no-cache /wheels/* 
+RUN pip install --upgrade pip && pip install --no-cache /wheels/*
 COPY . .

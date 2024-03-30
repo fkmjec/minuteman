@@ -20,7 +20,7 @@ FROM python:3.10-slim
 RUN addgroup --gid 1001 --system app && \
     adduser --shell /bin/false --disabled-password --uid 1001 --system --group app
 
-USER app
+# USER app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 

@@ -13,6 +13,7 @@ import pika
 # import transformers
 from faster_whisper import vad
 from pika.adapters.blocking_connection import BlockingChannel
+
 # from whisper_online import FasterWhisperASR, OnlineASRProcessor
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
@@ -190,25 +191,40 @@ def handle_request(
                 "timestamp": str(timestamp),
                 "seq": transcribable_audio.seq,
             }
-            if not channel.is_open:
-                channel = connection.channel()
-                channel.queue_declare("transcript_queue", durable=True)
+            try:
+                channel.basic_publish(
+                    exchange="",
+                    routing_key="transcript_queue",
+                    body=json.dumps(utterance),
+                )
+            except Exception as e:
+                logger.error(e)
+                logger.info("Reconnecting to RabbitMQ")
 
-            channel.basic_publish(
-                exchange="", routing_key="transcript_queue", body=json.dumps(utterance)
-            )
+                connection = get_rabbitmq_connection()
+                channel = connection.channel()
+
+                channel.basic_publish(
+                    exchange="",
+                    routing_key="transcript_queue",
+                    body=json.dumps(utterance),
+                )
 
 
 def init_worker(queue, transcripts):
-    speech_detector = SpeechDetector(SILERO_VAD_MODEL)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
+    speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     backend = faster_whisper.WhisperModel(WHISPER_MODEL)
+
     # asr = FasterWhisperASR(lan="auto", modelsize="large-v2")
     # asr.set_translate_task()
     # backend = OnlineASRProcessor(asr)
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    while not backend.model:
+        logger.info("Waiting for backend model to load")
+        time.sleep(5)
 
     connection = get_rabbitmq_connection()
     channel = connection.channel()
@@ -232,7 +248,7 @@ def get_rabbitmq_connection():
     while retries < MAX_RABBITMQ_RETRIES:
         try:
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="localhost")
+                pika.ConnectionParameters(host="rabbitmq")
             )
             return connection
         except Exception as e:

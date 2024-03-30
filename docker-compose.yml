@@ -16,7 +16,7 @@ services:
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
     command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 60
-    depends_on: 
+    depends_on:
       - rabbitmq
       - postgres
     # OPTION: set the running port for the application.
@@ -38,7 +38,7 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-  
+
   summ-worker:
     build: ./summarization_worker
     environment:

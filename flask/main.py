@@ -145,7 +145,11 @@ def transcribe(session_id):
         float_value = struct.unpack("<f", binary_data[i : i + 4])[0]
         float_array.append(float_value)
 
-    float_array = np.array(float_array)
+    float_array = np.array(float_array, dtype=np.float32)
+
+    with open(f"/audio/{author}-{recorder_id}.bin", "ab") as binary_file:
+        binary_file.write(float_array.tobytes())
+
     chunk = view_utils.create_audio_chunk(
         session_id, author, recorder_id, timestamp, float_array
     )
@@ -166,6 +170,7 @@ def transcribe(session_id):
 
 @app.route("/minuting/<session_id>/get_state/", methods=["GET"])
 def get_state(session_id):
+    session_config = None
     try:
         session_config = editor_interface.get_session_config(session_id)
     except ValueError:
@@ -179,11 +184,14 @@ def get_state(session_id):
     else:
         # mocking for development purposes
         model_selection = ["bart", "t5", "gpt2"]
-    return jsonify(
-        {
-            "status_code": 200,
-            "message": "ok",
-            "config": session_config,
-            "model_selection": model_selection,
-        }
-    )
+    if session_config is not None:
+        return jsonify(
+            {
+                "status_code": 200,
+                "message": "ok",
+                "config": session_config,
+                "model_selection": model_selection,
+            }
+        )
+    else:
+        return {"status_code": 400, "message": "Session not found"}

@@ -22,7 +22,7 @@ SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
 MAX_PROB_THR = 0.9
 SAMPLING_RATE = 16000
-MAX_CHUNKS = 15
+MAX_CHUNKS = 7
 
 logging.basicConfig(level=logging.INFO)
 
@@ -132,7 +132,6 @@ class Transcripts:
             self._add_session(session_id)
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
-
 def handle_request(
     body,
     channel: BlockingChannel,
@@ -141,6 +140,8 @@ def handle_request(
     backend,
     transcripts,
     logger,
+    translator,
+    sp
 ):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
 
@@ -182,6 +183,32 @@ def handle_request(
             utterance_text += segment.text + " "
             logger.debug(f"Transcript {i}: {segment.text}")
 
+        # # Source and target language codes
+        # src_lang = "eng_Latn"
+        # tgt_lang = "ces_Latn"
+
+        # beam_size = 4
+
+        # source_sentences = [sent.strip() for sent in utterance_text.split(".") if len(sent.strip()) > 0]
+        # target_prefix = [[tgt_lang]] * len(source_sentences)
+
+        # # Sub-word the source sentences
+        # source_sents_subworded = sp.encode_as_pieces(source_sentences)
+        # source_sents_subworded = [[src_lang] + sent + ["</s>"] for sent in source_sents_subworded]
+        # print("First sub-worded source sentence:", source_sents_subworded[0], sep="\n")
+
+        # # Translate the source sentences
+        # translations_subworded = translator.translate_batch(source_sents_subworded, batch_type="tokens", max_batch_size=2024, beam_size=beam_size, target_prefix=target_prefix)
+        # translations_subworded = [translation.hypotheses[0] for translation in translations_subworded]
+        # for translation in translations_subworded:
+        #     if tgt_lang in translation:
+        #         translation.remove(tgt_lang)
+
+        # # De-sub-word the target sentences
+        # translations = sp.decode(translations_subworded)
+        # print("First sentence and translation:", source_sentences, translations, sep="\n")
+
+        # utterance_text = " ".join(translations).replace("  ", " ").strip()
         utterance_text = f"{author}: {utterance_text}\n"
 
         if len(utterance_text) > 0:
@@ -230,11 +257,26 @@ def init_worker(queue, transcripts):
     channel = connection.channel()
     channel.queue_declare("transcript_queue", durable=True)
 
+    # import ctranslate2
+    # import sentencepiece as spm
+
+    # # [Modify] Set paths to the CTranslate2 and SentencePiece models
+    # ct_model_path = "nllb-200-3.3B-int8"
+    # sp_model_path = "flores200_sacrebleu_tokenizer_spm.model"
+
+    # device = "cuda"  # or "cpu"
+
+    # # Load the source SentencePiece model
+    # sp = spm.SentencePieceProcessor()
+    # sp.load(sp_model_path)
+
+    # translator = ctranslate2.Translator(ct_model_path, device=device)
+
     try:
         while True:
             body = queue.get()
             handle_request(
-                body, channel, connection, speech_detector, backend, transcripts, logger
+                body, channel, connection, speech_detector, backend, transcripts, logger, translator, sp
             )
     except Exception as e:
         logger.error(e)

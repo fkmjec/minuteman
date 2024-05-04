@@ -37,3 +37,4 @@ transformers==4.29.2
 typing_extensions==4.6.1
 uctools==1.3.0
 urllib3==2.0.2
+sentencepiece==0.2.0

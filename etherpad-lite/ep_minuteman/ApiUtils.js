@@ -23,7 +23,7 @@ const validateApiKey = (fields, res) => {
   const apiKeyReceived = fields.apikey || fields.api_key;
   if (apiKeyReceived !== apiKey) {
     res.statusCode = 401;
-    res.json({code: 4, message: 'no or wrong API Key', data: null});
+    res.json({ code: 4, message: 'no or wrong API Key', data: null });
     valid = false;
   }
 
@@ -39,7 +39,7 @@ const validateRequiredFields = (originalFields, requiredFields, res) => {
   for (const requiredField of requiredFields) {
     if (!validateRequiredField(originalFields, requiredField)) {
       const errorMessage = `${requiredField} is required`;
-      res.json({code: 1, message: errorMessage, data: null});
+      res.json({ code: 1, message: errorMessage, data: null });
       return false;
     }
   }

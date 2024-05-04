@@ -14,8 +14,6 @@ import pika
 from faster_whisper import vad
 from pika.adapters.blocking_connection import BlockingChannel
 
-# from whisper_online import FasterWhisperASR, OnlineASRProcessor
-
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
@@ -132,6 +130,7 @@ class Transcripts:
             self._add_session(session_id)
         return self.meetings[session_id].add_chunk(recorder_id, chunk, contains_speech)
 
+
 def handle_request(
     body,
     channel: BlockingChannel,
@@ -140,8 +139,8 @@ def handle_request(
     backend,
     transcripts,
     logger,
-    translator,
-    sp
+    # translator,
+    # sp,
 ):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
 
@@ -276,7 +275,15 @@ def init_worker(queue, transcripts):
         while True:
             body = queue.get()
             handle_request(
-                body, channel, connection, speech_detector, backend, transcripts, logger, translator, sp
+                body,
+                channel,
+                connection,
+                speech_detector,
+                backend,
+                transcripts,
+                logger,
+                # translator,
+                # sp,
             )
     except Exception as e:
         logger.error(e)

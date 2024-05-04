@@ -37,7 +37,7 @@ And after downloading the necessary containers and building the dependencies, we
 
 ### Production
 
-For running in production, we need to download the summarization models. To do that, we run `download_summ_models.sh` in the `torch_model_dir` directory. We also need to set an additional option, `ETHERPAD_URL`, to the domain we have pointed to our Etherpad editors for iframing. After that, the commands to run are the same as for the development version, except with a different compose file.
+For running in production, we need to download the summarization models. To do that, we run `download_summ_models.sh` in the `torch_model_dir` directory. We also need to set an additional option, `ETHERPAD_URL`, to the domain we have pointed to our Etherpad editors for iframes. After that, the commands to run are the same as for the development version, except with a different compose file.
 
 ```sh
 docker compose -f docker-compose.yml build

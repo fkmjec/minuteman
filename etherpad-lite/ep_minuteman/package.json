@@ -17,9 +17,7 @@
   "bugs": {
     "url": "https://github.com/fkmjec/ep_minuteman/issues"
   },
-  "homepage": {
-    "url": "https://github.com/fkmjec/ep_minuteman/README.md"
-  },
+  "homepage": "https://github.com/fkmjec/ep_minuteman/README.md",
   "engines": {
     "node": ">= 0.6.0"
   },

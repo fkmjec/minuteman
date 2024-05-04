@@ -1,7 +1,7 @@
-const { Changeset } = require("ep_etherpad-lite/static/js/Changeset"); 
+const { Changeset } = require("ep_etherpad-lite/static/js/Changeset");
 const Utils = require("./Utils");
 
-exports.aceAttribsToClasses = function(hook, context, cb) {
+exports.aceAttribsToClasses = function (hook, context, cb) {
     if (context.key == "summary_seq") {
         return cb([`summary_seq::${context.value}`]);
     } else if (context.key == "trsc_seq") {

@@ -17,18 +17,18 @@ function deserializeSummSeq(str) {
     return parseInt(str.split('_')[1]);
 }
 
-exports.prependTrscSeqNum = function(text, seq) {
+exports.prependTrscSeqNum = function (text, seq) {
     const paddedSeq = seq.toString().padStart(4, '0');
     const prepended = `${paddedSeq} || ${text}`;
     return prepended;
 }
 
-exports.prependSummMetadata = function(text, seq, start, end) {
+exports.prependSummMetadata = function (text, seq, start, end) {
     const prepended = `${seq} ${start}->${end} || ${text}`;
     return prepended;
 }
 
-exports.stripSummMetadata = function(text) {
+exports.stripSummMetadata = function (text) {
     const split = text.split(' || ');
     if (split.length > 1) {
         return split[1];
@@ -37,7 +37,7 @@ exports.stripSummMetadata = function(text) {
     }
 }
 
-exports.stripTrscSeqNum = function(text) {
+exports.stripTrscSeqNum = function (text) {
     const split = text.split(' || ');
     if (split.length > 1) {
         return split[1];
@@ -64,7 +64,7 @@ exports.zip = function (a, b) {
  * @param {*} attribKey the attribute key to check for
  * @returns the attribute value or null if not found
  */
-exports.getLineAttributeValue = function(alineAttrs, apool, attribKey) {
+exports.getLineAttributeValue = function (alineAttrs, apool, attribKey) {
     var header = null;
     if (alineAttrs) {
         var opIter = Changeset.opIterator(alineAttrs);
@@ -81,11 +81,11 @@ exports.getLineAttributeValue = function(alineAttrs, apool, attribKey) {
 
 /**
  * Extracts the trsc seq from a given line.
- * @param {*} alineAttrs 
- * @param {*} apool 
+ * @param {*} alineAttrs
+ * @param {*} apool
  * @returns the trsc sequence number or null if not found
  */
-exports.getTrscLineSeq = function(alineAttrs, apool) {
+exports.getTrscLineSeq = function (alineAttrs, apool) {
     const seq = exports.getLineAttributeValue(alineAttrs, apool, "trsc_seq");
     if (seq) {
         return deserializeTrscSeq(seq);
@@ -95,11 +95,11 @@ exports.getTrscLineSeq = function(alineAttrs, apool) {
 
 /**
  * Extracts the summary seq from a given line.
- * @param {*} alineAttrs 
- * @param {*} apool 
+ * @param {*} alineAttrs
+ * @param {*} apool
  * @returns the summary sequence number or null if not found
  */
-exports.getSummLineSeq = function(alineAttrs, apool) {
+exports.getSummLineSeq = function (alineAttrs, apool) {
     const seq = exports.getLineAttributeValue(alineAttrs, apool, "summary_seq");
     if (seq) {
         return deserializeSummSeq(seq);
@@ -114,8 +114,8 @@ exports.getSummLineSeq = function(alineAttrs, apool) {
  * @param {*} summarySeq the summary id that is stored as attribute
  * @returns the appending changeset
  */
-exports.getSummaryAppendChs = function(pad, summarySeq, summaryText) {
-    return appendWithAttribs(pad, summaryText, [[ "summary_seq", serializeSummSeq(summarySeq) ]]);
+exports.getSummaryAppendChs = function (pad, summarySeq, summaryText) {
+    return appendWithAttribs(pad, summaryText, [["summary_seq", serializeSummSeq(summarySeq)]]);
 }
 
 /**
@@ -125,7 +125,7 @@ exports.getSummaryAppendChs = function(pad, summarySeq, summaryText) {
  * @param {*} summarySeq the summary sequence number (the identifier)
  * @returns the changeset that replaces the old summary content with new
  */
-exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
+exports.getSummaryUpdateChs = function (pad, summarySeq, newSummaryText) {
     const atext = pad.atext;
     const apool = pad.apool();
     let oldText = pad.text();
@@ -137,7 +137,7 @@ exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
         const candidateId = exports.getSummLineSeq(attribLine, apool);
         if (candidateId === summarySeq) {
             const charsToRemove = textLine.length;
-            const attribs = [[ "summary_seq", serializeSummSeq(summarySeq)]];
+            const attribs = [["summary_seq", serializeSummSeq(summarySeq)]];
             return Changeset.makeSplice(oldText, charsBefore, charsToRemove, newSummaryText, attribs, pad.pool);
         }
         charsBefore += textLine.length + 1;
@@ -151,10 +151,10 @@ exports.getSummaryUpdateChs = function(pad, summarySeq, newSummaryText) {
  * @param {*} utterance - Utterance object to append
  * @returns Changeset to apply to pad
  */
-exports.getUtteranceAppendChs = function(pad, utterance, isDebug) {
+exports.getUtteranceAppendChs = function (pad, utterance, isDebug) {
     let appendedText = utterance.utterance;
     if (isDebug) {
         appendedText = exports.prependTrscSeqNum(appendedText, utterance.seq);
     }
-    return appendWithAttribs(pad, appendedText, [[ "trsc_seq", serializeTrscSeq(utterance.seq)]]);
+    return appendWithAttribs(pad, appendedText, [["trsc_seq", serializeTrscSeq(utterance.seq)]]);
 }

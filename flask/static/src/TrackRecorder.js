@@ -8,7 +8,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
  * single JitsiTrack (either remote or local)
  * @param track The JitsiTrack the object is going to hold
  */
- export class TrackRecorder {
+export class TrackRecorder {
     /**
      * @param track The JitsiTrack the object is going to hold
      */
@@ -25,7 +25,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
         const originalStream = track.getOriginalStream();
         const originalStreamNode = this.audioContext.createMediaStreamSource(originalStream);
 
-        this.audioContext.audioWorklet.addModule("/static/dist/VoiceRecorder.js").then(() => {            
+        this.audioContext.audioWorklet.addModule("/static/dist/VoiceRecorder.js").then(() => {
             this.voiceRecorder = new AudioWorkletNode(this.audioContext, "VoiceRecorder", {
                 processorOptions: {
                     sampleRate: this.audioContext.sampleRate,
@@ -37,7 +37,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
             originalStreamNode.connect(this.voiceRecorder);
         }).catch((e) => console.error(e));
     }
-    
+
     stop() {
         if (this.voiceRecorder !== undefined) {
             this.voiceRecorder.port.postMessage("stop");
@@ -45,7 +45,7 @@ const SENT_CHUNK_LEN = 1.0; // seconds
     }
 
     /**
-     * @param {data} Float32Array of raw audio 
+     * @param {data} Float32Array of raw audio
      */
     sendActiveData(data) {
         const startTime = new Date(Date.now() - SENT_CHUNK_LEN * 1000);

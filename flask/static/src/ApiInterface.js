@@ -36,7 +36,7 @@ async function getState() {
     if (response.status != 200) {
         throw new Error("Invalid response from the API while getting state");
     }
-    return {config: json.config, model_selection: json.model_selection};
+    return { config: json.config, model_selection: json.model_selection };
 }
 
 function setChunkLen(chunkLen) {

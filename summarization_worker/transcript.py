@@ -1,16 +1,19 @@
 import re
+
 import kartik_utils
 import text_utils
+
 
 class Transcript:
     """
     The base class for all future processing. A transcript gets loaded into it from various formats and is then fed
     through preprocessing stages.
     """
+
     def __init__(self, roles, utterances):
         self.roles = roles
         self.utterances = utterances
-    
+
     def kartik_clean(self):
         new_roles, new_utterances = [], []
         for role, utterance in zip(self.roles, self.utterances):
@@ -20,14 +23,12 @@ class Transcript:
                 new_utterances.append(utterance)
         self.roles = new_roles
         self.utterances = new_utterances
-    
 
     def raw_str(self):
         joined_list = []
         for role, utterance in zip(self.roles, self.utterances):
             joined_list.append(role + ": " + utterance)
         return "\n".join(joined_list)
-
 
     def split_to_lens(self, tokenizer, max_len):
         splits = []
@@ -49,7 +50,6 @@ class Transcript:
         if current_len != 0:
             splits.append(current_split)
         return splits
-
 
     @staticmethod
     def from_gdoc(input_string):
@@ -77,7 +77,6 @@ class Transcript:
             utterances.append(current_utterance)
         return Transcript(roles, utterances)
 
-
     @staticmethod
     def from_automin(input_string):
         roles = []
@@ -104,5 +103,3 @@ class Transcript:
             roles.append(current_role)
             utterances.append(current_utterance)
         return Transcript(roles, utterances)
-
-

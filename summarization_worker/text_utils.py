@@ -1,10 +1,11 @@
-import re
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 SEPARATORS = "\n"
 TRSC_SEPARATOR = "\n-----TRANSCRIPT SEPARATOR-----\n"
+
 
 def split_to_lens(input_str, max_len, tokenizer):
     splits = re.split(SEPARATORS, input_str)

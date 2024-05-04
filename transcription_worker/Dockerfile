@@ -14,8 +14,7 @@ FROM tensorflow/tensorflow:devel-gpu
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN addgroup --gid 1001 --system app && \
-    adduser --shell /bin/false --disabled-password --uid 1001 --system --group app
+RUN addgroup --gid 1001 --system app && adduser --shell /bin/false --disabled-password --uid 1001 --system --group app
 
 # USER app
 

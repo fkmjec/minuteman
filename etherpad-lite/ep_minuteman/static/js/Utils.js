@@ -15,7 +15,7 @@ function deserializeTrscSeq(str) {
  * @param {*} attribKey the attribute key to check for
  * @returns the attribute value or null if not found
  */
- exports.getLineAttributeValue = function(alineAttrs, apool, attribKey) {
+exports.getLineAttributeValue = function (alineAttrs, apool, attribKey) {
     var header = null;
     if (alineAttrs) {
         var opIter = Changeset.opIterator(alineAttrs);
@@ -32,11 +32,11 @@ function deserializeTrscSeq(str) {
 
 /**
  * Extracts the trsc seq from a given line.
- * @param {*} alineAttrs 
- * @param {*} apool 
+ * @param {*} alineAttrs
+ * @param {*} apool
  * @returns the trsc sequence number or null if not found
  */
- exports.getTrscLineSeq = function(alineAttrs, apool) {
+exports.getTrscLineSeq = function (alineAttrs, apool) {
     const seq = exports.getLineAttributeValue(alineAttrs, apool, "trsc_seq");
     if (seq) {
         return deserializeTrscSeq(seq);

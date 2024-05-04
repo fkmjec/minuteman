@@ -1,7 +1,8 @@
 # the global config object for the entire app. Loaded once from env variables
 import os
 
-class Config():
+
+class Config:
     def __init__(self):
         self.mock_ml_models = os.environ["MOCK_ML_MODELS"] == "true"
         # self.torch_backend_url = os.environ["TORCH_BACKEND_URL"]

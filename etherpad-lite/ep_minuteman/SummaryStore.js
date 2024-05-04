@@ -5,7 +5,7 @@ const SummaryUtils = require("./SummaryUtils");
 MAX_WORD_LEN = 512;
 
 class TranscriptChunk {
-    constructor (text, len, start, end, seq) {
+    constructor(text, len, start, end, seq) {
         this.text = text;
         this.start = start;
         this.end = end;
@@ -15,7 +15,7 @@ class TranscriptChunk {
 }
 
 class TranscriptChunker {
-    constructor (maxWordLen) {
+    constructor(maxWordLen) {
         this.currentChunk = "";
         this.started = false;
         this.currentLen = 0;
@@ -25,7 +25,7 @@ class TranscriptChunker {
         this.maxWordLen = maxWordLen;
     }
 
-    append (utterance) {
+    append(utterance) {
         const utteranceWordLen = utterance.utterance.split(/\s+/).length;
         if (this.currentLen + utteranceWordLen > this.maxWordLen) {
             const returnedChunk = new TranscriptChunk(
@@ -51,7 +51,7 @@ class TranscriptChunker {
 }
 
 class Summary {
-    constructor (seq, trscStart, trscEnd, source, summary) {
+    constructor(seq, trscStart, trscEnd, source, summary) {
         this.seq = seq;
         this.trscStart = trscStart;
         this.trscEnd = trscEnd;
@@ -60,7 +60,7 @@ class Summary {
         this.frozen = false;
     }
 
-    freeze () {
+    freeze() {
         this.frozen = true;
     }
 }
@@ -69,7 +69,7 @@ class SummarySession {
     /**
      * @param {*} debug whether the session is in debug mode or not
      */
-    constructor (debug) {
+    constructor(debug) {
         // TODO: this will need a persistent backend, but it is not necessary for the prototype
         this.summaries = {};
         this.currentUserSummSeq = 1000;
@@ -81,27 +81,27 @@ class SummarySession {
     /**
      * Add a summary to the session
      * @param {*} seq the sequence number of the summary
-     * @param {*} start the start line seq in the trascript
+     * @param {*} start the start line seq in the transcript
      * @param {*} end the end line seq in the transcript
      * @param {*} source the source summarized transcript
      * @param {*} summary the generated summary
      */
-    addSummary (seq, start, end, source, summary) {
+    addSummary(seq, start, end, source, summary) {
         const summaryObj = new Summary(seq, start, end, source, summary);
         this.summaries[seq] = summaryObj;
     }
 
-    freeze (seq) {
+    freeze(seq) {
         this.summaries[seq].freeze();
     }
 
-    isFrozen (seq) {
+    isFrozen(seq) {
         return this.summaries[seq].frozen;
     }
 }
 
 class SummaryStore {
-    constructor () {
+    constructor() {
         this.sessions = {};
         this.startedChunks = {};
     }
@@ -155,7 +155,7 @@ class SummaryStore {
      * @param {*} trscChunk the transcript chunk that contains the input transcript segment
      * @param {*} summaryContent the content of the summary
      */
-    addSummary (sessionId, trscChunk, summaryContent) {
+    addSummary(sessionId, trscChunk, summaryContent) {
         if (!this.sessions[sessionId]) {
             console.error(`Session ${sessionId} not found!`);
             return;
@@ -175,13 +175,13 @@ class SummaryStore {
         return summId;
     }
 
-    /** 
+    /**
      * Updates the content of a summary. Usually called when a new response comes from the summarizer.
      * @param {*} sessionId the session in which the summary was created
      * @param {*} summarySeq the sequence number of the summary
      * @param {*} summaryContent the new content of the summary
      */
-    updateSummaryContent (sessionId, summarySeq, summaryContent) {
+    updateSummaryContent(sessionId, summarySeq, summaryContent) {
         if (!this.sessions[sessionId]) {
             console.error(`Session ${sessionId} not found!`);
             return;
@@ -195,11 +195,11 @@ class SummaryStore {
 
     /**
      * Check which segments of the transcript were modified and updates the summaries
-     * @param {*} sessionId the session in which the transcript was updated 
+     * @param {*} sessionId the session in which the transcript was updated
      * @param {*} pad the pad that contains the transcript
      * @returns a list of summaries to update
      */
-    updateTrsc (sessionId, pad) {
+    updateTrsc(sessionId, pad) {
         if (!this.sessions[sessionId]) {
             console.error(`Session ${sessionId} not found!`);
             return;
@@ -220,11 +220,11 @@ class SummaryStore {
 
     /**
      * takes an updated summary pad and checks which summaries were edited by the user.
-     * Those are then frozen so that they are not overriden by automatic updates.
-     * @param {*} sessionId 
-     * @param {*} pad 
+     * Those are then frozen so that they are not overridden by automatic updates.
+     * @param {*} sessionId
+     * @param {*} pad
      */
-    freezeSummaries (sessionId, pad) {
+    freezeSummaries(sessionId, pad) {
         if (!this.sessions[sessionId]) {
             console.error(`Session ${sessionId} not found!`);
             return;
@@ -241,10 +241,10 @@ class SummaryStore {
 
     /**
      * Freezes the summary from further automatic updates (because we do not want to override user input)
-     * @param {*} sessionId 
-     * @param {*} summarySeq 
+     * @param {*} sessionId
+     * @param {*} summarySeq
      */
-    freeze (sessionId, summarySeq) {
+    freeze(sessionId, summarySeq) {
         if (!this.sessions[sessionId]) {
             console.error(`Session ${sessionId} not found!`);
             return;
@@ -257,7 +257,7 @@ class SummaryStore {
      * @param {*} sessionId
      * @returns the session configuration
      */
-    getSessionConfig (sessionId) {
+    getSessionConfig(sessionId) {
         const session = this.sessions[sessionId];
         return {
             debug: session.debug,

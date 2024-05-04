@@ -33,7 +33,7 @@ function sleep(ms) {
     });
 }
 
-exports.padCreate = function(hook, context, cb){
+exports.padCreate = function (hook, context, cb) {
     const apool = new AttributePool();
     const builder = Changeset.builder(1, apool);
     context.pad.setText("");
@@ -157,7 +157,7 @@ async function init() {
 }
 
 // Add api hooks for our summary api extensions
-exports.expressCreateServer = function(hook, args, cb) {
+exports.expressCreateServer = function (hook, args, cb) {
     logger.info("Express create server called!");
     args.app.use(express.json());
     args.app.post("/api/createSumm", async (req, res) => {
@@ -248,7 +248,7 @@ exports.expressCreateServer = function(hook, args, cb) {
     cb();
 }
 
-exports.padUpdate = function(hook, context, cb) {
+exports.padUpdate = function (hook, context, cb) {
     logger.info("padUpdate called!");
     // edited by the plugin, no action needed
     if (!context.author) {

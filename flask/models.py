@@ -3,7 +3,7 @@ from typing import List
 
 from extensions import db
 from sqlalchemy import DateTime, ForeignKey, Identity, String, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class MinutemanSession(db.Model):

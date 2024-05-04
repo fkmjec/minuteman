@@ -4,8 +4,6 @@ import urllib.parse
 import requests
 import transcript
 
-# SUMM_MODEL_NAME = "bart"
-
 
 # the class to hold config and create requests for the underlying TorchServe backend
 class TorchInterface:

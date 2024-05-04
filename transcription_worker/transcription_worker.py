@@ -244,10 +244,6 @@ def init_worker(queue, transcripts):
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     backend = faster_whisper.WhisperModel(WHISPER_MODEL)
 
-    # asr = FasterWhisperASR(lan="auto", modelsize="large-v2")
-    # asr.set_translate_task()
-    # backend = OnlineASRProcessor(asr)
-
     while not backend.model:
         logger.info("Waiting for backend model to load")
         time.sleep(5)
@@ -316,7 +312,6 @@ def callback(ch, method, properties, body):
 
 
 if __name__ == "__main__":
-    # setting up logging
     logger = logging.getLogger(__name__)
 
     transcripts = Transcripts()

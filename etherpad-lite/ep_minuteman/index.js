@@ -126,7 +126,6 @@ async function connectToRabbitMQ() {
                 const isDebug = summaryStore.sessions[summaryObj.session_id] && summaryStore.sessions[summaryObj.session_id].debug;
                 let summaryContent = summaryObj.summary_text;
                 if (isDebug) {
-                    // TODO: rewrite this mess
                     const summary = summaryStore.sessions[summaryObj.session_id].summaries[summaryObj.summary_seq];
                     const start = summary.trscStart;
                     const end = summary.trscEnd;

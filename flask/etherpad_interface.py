@@ -11,7 +11,6 @@ class PadInterface:
             self.config.etherpad_api_key, baseUrl=self.config.etherpad_api_url
         )
 
-    # TODO: move these utility functions to some general util file
     def _get_trsc_pad_id(self, pad_id):
         return pad_id + ".trsc"
 

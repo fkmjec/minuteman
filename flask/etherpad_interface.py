@@ -23,7 +23,7 @@ class PadInterface:
         elif pad_id.endswith(".summ"):
             return pad_id[0:-5], "summ"
         else:
-            raise ValueError("Incorrect pad_id that does not end with .summ or .trcs")
+            raise ValueError("Incorrect pad_id that does not end with .summ or .trsc")
 
     def create_session(self, session_id, config):
         # creates a pad for the transcript and a pad for the summary

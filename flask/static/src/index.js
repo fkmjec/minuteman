@@ -26,9 +26,9 @@ window.recorder = recorder;
 
 $(window).bind
 window.onChunkLenSelect = onChunkLenSelect;
-window.onModelSelect =  onModelSelect;
+window.onModelSelect = onModelSelect;
 
-setInterval(async function() {
+setInterval(async function () {
     try {
         let response = await ApiInterface.getState();
         ConfigUtils.updateConfigOptions(response.config, response.model_selection);

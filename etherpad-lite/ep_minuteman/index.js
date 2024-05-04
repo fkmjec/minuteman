@@ -26,7 +26,7 @@ const summaryStore = new SummaryStore();
 let rabbitMQConnection = null;
 
 init();
-  
+
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
@@ -91,6 +91,7 @@ async function appendTranscript(utterance) {
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
     const trscChunk = summaryStore.appendUtterance(utterance, isDebug);
+
     await addUtteranceToPad(trscPad, utterance, isDebug);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
@@ -255,7 +256,7 @@ exports.padUpdate = function(hook, context, cb) {
         return;
     }
     if (context.pad.id.slice(-5) === ".trsc") {
-        const sessionId = context.pad.id.slice(0, -5); 
+        const sessionId = context.pad.id.slice(0, -5);
         const toSummarize = summaryStore.updateTrsc(sessionId, context.pad);
         for (const summary of toSummarize) {
             sendChunkToSummarize(sessionId, summary.seq, summary.source, true);

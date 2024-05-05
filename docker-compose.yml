@@ -52,10 +52,11 @@ services:
   torchserve:
     build: ./torchserve
     # OPTION: you can provide additional models here if you created them
-    command: torchserve --start --ts-config /torch-config.cnf --model-store /torch_model_dir --models flan-t5=flan-t5-base-samsum.mar bart=lidiya-bart.mar
+    command: torchserve --ts-config /torch-config.cnf --model-store /torch_model_dir --models flan-t5=flan-t5-base-samsum.mar bart=lidiya-bart.mar --log-config /torchserve-log4j2.xml --start
     volumes:
      - ./torch_model_dir:/torch_model_dir
      - ./torch-config.cnf:/torch-config.cnf
+     - ./torchserve-log4j2.xml:/torchserve-log4j2.xml
     deploy:
       resources:
         reservations:
@@ -81,7 +82,7 @@ services:
     environment:
       TITLE: Minuteman
       # TODO: set the Etherpad admin password
-      ADMIN_PASSWORD: [YOUR ADMIN PASSWORD]
+      ADMIN_PASSWORD: "YOUR ADMIN PASSWORD"
       ADMIN_USER: admin
       DB_TYPE: postgres
       DB_HOST: postgres

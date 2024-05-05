@@ -14,7 +14,16 @@ import view_utils
 from extensions import db
 from models import DBInterface
 
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
 
 app = Flask(__name__)
 # load config from env variables
@@ -67,6 +76,15 @@ def cleanup():
 
 
 atexit.register(cleanup)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
 
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])

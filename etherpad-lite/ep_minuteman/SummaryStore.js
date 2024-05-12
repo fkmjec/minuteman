@@ -124,17 +124,19 @@ class SummaryStore {
      * @returns a transcript chunk if the utterance caused a chunk to be completed, null otherwise
      */
     appendUtterance(utterance) {
-        if (!this.startedChunks[utterance.sessionId]) {
-            console.error(`Session ${utterance.sessionId} not found!`);
+        let sessionId = utterance.sessionId.split("_")[0];
+        if (!this.startedChunks[sessionId]) {
+            console.error(`[appendUtterance] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
-        const possibleChunk = this.startedChunks[utterance.sessionId].append(utterance);
+        const possibleChunk = this.startedChunks[sessionId].append(utterance);
         return possibleChunk;
     }
 
     setChunkLen(sessionId, len) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[setChunkLen] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
 
@@ -142,8 +144,9 @@ class SummaryStore {
     }
 
     setModel(sessionId, summModel) {
+        sessionId = sessionId.split("_")[0];
         if (!this.startedChunks[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[setModel] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         this.sessions[sessionId].model = summModel;
@@ -156,8 +159,9 @@ class SummaryStore {
      * @param {*} summaryContent the content of the summary
      */
     addSummary(sessionId, trscChunk, summaryContent) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[addSummary] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         const summarySeq = trscChunk.seq;
@@ -165,8 +169,9 @@ class SummaryStore {
     }
 
     addUserSelectedSummary(sessionId, startSeq, endSeq, summarySource, summaryContent) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[addUserSelectedSummary] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         const summId = this.sessions[sessionId].currentUserSummSeq;
@@ -182,8 +187,9 @@ class SummaryStore {
      * @param {*} summaryContent the new content of the summary
      */
     updateSummaryContent(sessionId, summarySeq, summaryContent) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[updateSummaryContent] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         if (!this.sessions[sessionId].summaries[summarySeq]) {
@@ -200,8 +206,9 @@ class SummaryStore {
      * @returns a list of summaries to update
      */
     updateTrsc(sessionId, pad) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[updateTrsc] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         const session = this.sessions[sessionId];
@@ -225,8 +232,9 @@ class SummaryStore {
      * @param {*} pad
      */
     freezeSummaries(sessionId, pad) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[freezeSummaries] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         const summaries = SummaryUtils.getSummariesFromPad(pad);
@@ -245,8 +253,9 @@ class SummaryStore {
      * @param {*} summarySeq
      */
     freeze(sessionId, summarySeq) {
+        sessionId = sessionId.split("_")[0];
         if (!this.sessions[sessionId]) {
-            console.error(`Session ${sessionId} not found!`);
+            console.error(`[freeze] Session ${sessionId} not found!, ${JSON.stringify(this.sessions, null, 2)}`);
             return;
         }
         this.sessions[sessionId].freeze(summarySeq);
@@ -258,6 +267,7 @@ class SummaryStore {
      * @returns the session configuration
      */
     getSessionConfig(sessionId) {
+        sessionId = sessionId.split("_")[0];
         const session = this.sessions[sessionId];
         return {
             debug: session.debug,

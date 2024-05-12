@@ -118,6 +118,7 @@ async function connectToRabbitMQ() {
             await channel.assertQueue(SUMMARY_RESULT_QUEUE);
             channel.consume(TRANSCRIPT_QUEUE, (msg) => {
                 const trscObj = new Utterance(msg.content);
+                console.log("TEST_trscObj:", trscObj);
                 appendTranscript(trscObj);
             }, { noAck: true });
 
@@ -199,6 +200,16 @@ exports.expressCreateServer = function (hook, args, cb) {
         summaryStore.setModel(sessionId, summModel);
         res.status(200).send("OK");
     });
+
+    // args.app.post("/api/setSummModel", async (req, res) => {
+    //     const fields = await new Promise((resolve, reject) => {
+    //         new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
+    //     });
+    //     const language = fields.language;
+    //     // summaryStore.setModel(sessionId, summModel);
+    //     console.log("New language:", language);
+    //     res.status(200).send("OK");
+    // });
 
 
     args.app.post("/api/setConnectionStatus", async (req, res) => {

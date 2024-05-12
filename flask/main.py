@@ -150,6 +150,20 @@ def set_summ_model(session_id):
         return jsonify({"status_code": 200, "message": "ok"})
 
 
+# @app.route("/minuting/<session_id>/set_language/", methods=["POST"])
+# def set_language(session_id):
+#     language = request.form.get("language")
+#     print("Setting language", language)
+#     # local debugging purposes
+#     available_languages = ["bart", "t5", "gpt2"]
+#     if language not in available_languages:
+#         return jsonify({"status_code": 400, "message": "Unsupported language"})
+#     else:
+#         # editor_interface.set_summ_model(session_id, language)
+#         print("Successfully set language:", language)
+#         return jsonify({"status_code": 200, "message": "ok"})
+
+
 @app.route("/minuting/<session_id>/transcribe/", methods=["POST"])
 def transcribe(session_id):
     float_array = []

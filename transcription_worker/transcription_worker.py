@@ -6,11 +6,11 @@ import time
 from queue import Queue
 
 import audio_chunk
+import ctranslate2
 import faster_whisper
 import numpy as np
 import pika
-
-# import transformers
+import sentencepiece as spm
 from faster_whisper import vad
 from pika.adapters.blocking_connection import BlockingChannel
 
@@ -139,8 +139,8 @@ def handle_request(
     backend,
     transcripts,
     logger,
-    # translator,
-    # sp,
+    translator,
+    sp,
 ):
     deserialized = audio_chunk.AudioChunk.deserialize(body)
 
@@ -197,7 +197,7 @@ def handle_request(
         # print("First sub-worded source sentence:", source_sents_subworded[0], sep="\n")
 
         # # Translate the source sentences
-        # translations_subworded = translator.translate_batch(source_sents_subworded, batch_type="tokens", max_batch_size=2024, beam_size=beam_size, target_prefix=target_prefix)
+        # translations_subworded = translator.translate_batch(source_sents_subworded, batch_type="tokens", max_batch_size=2048, beam_size=beam_size, target_prefix=target_prefix)
         # translations_subworded = [translation.hypotheses[0] for translation in translations_subworded]
         # for translation in translations_subworded:
         #     if tgt_lang in translation:
@@ -208,33 +208,62 @@ def handle_request(
         # print("First sentence and translation:", source_sentences, translations, sep="\n")
 
         # utterance_text = " ".join(translations).replace("  ", " ").strip()
-        utterance_text = f"{author}: {utterance_text}\n"
 
         if len(utterance_text) > 0:
-            utterance = {
-                "utterance": utterance_text,
-                "session_id": session_id,
-                "timestamp": str(timestamp),
-                "seq": transcribable_audio.seq,
-            }
-            try:
-                channel.basic_publish(
-                    exchange="",
-                    routing_key="transcript_queue",
-                    body=json.dumps(utterance),
-                )
-            except Exception as e:
-                logger.error(e)
-                logger.info("Reconnecting to RabbitMQ")
+            # send English first
+            utterance = (
+                {
+                    "utterance": f"{author}: {utterance_text}\n",
+                    "session_id": session_id + "_" + "en",
+                    "timestamp": str(timestamp),
+                    "seq": transcribable_audio.seq,
+                },
+            )
+            send_utterance(
+                utterance,
+                connection,
+                channel,
+                logger,
+            )
 
-                connection = get_rabbitmq_connection()
-                channel = connection.channel()
-
-                channel.basic_publish(
-                    exchange="",
-                    routing_key="transcript_queue",
-                    body=json.dumps(utterance),
+            # call translation worker
+            translations = {}
+            for language in translations:
+                utterance = (
+                    {
+                        "utterance": f"{author}: {translations[language]}\n",
+                        "session_id": session_id + "_" + language,
+                        "timestamp": str(timestamp),
+                        "seq": transcribable_audio.seq,
+                    },
                 )
+                send_utterance(
+                    utterance,
+                    connection,
+                    channel,
+                    logger,
+                )
+
+
+def send_utterance(utterance, connection, channel, logger):
+    try:
+        channel.basic_publish(
+            exchange="",
+            routing_key="transcript_queue",
+            body=json.dumps(utterance),
+        )
+    except Exception as e:
+        logger.error(e)
+        logger.info("Reconnecting to RabbitMQ")
+
+        connection = get_rabbitmq_connection()
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange="",
+            routing_key="transcript_queue",
+            body=json.dumps(utterance),
+        )
 
 
 def init_worker(queue, transcripts):
@@ -242,7 +271,7 @@ def init_worker(queue, transcripts):
     logger.setLevel(logging.INFO)
 
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
-    backend = faster_whisper.WhisperModel(WHISPER_MODEL)
+    backend = faster_whisper.WhisperModel("/whisper_model", local_files_only=True)
 
     while not backend.model:
         logger.info("Waiting for backend model to load")
@@ -252,20 +281,17 @@ def init_worker(queue, transcripts):
     channel = connection.channel()
     channel.queue_declare("transcript_queue", durable=True)
 
-    # import ctranslate2
-    # import sentencepiece as spm
+    # [Modify] Set paths to the CTranslate2 and SentencePiece models
+    ct_model_path = "nllb-200-3.3B-int8"
+    sp_model_path = "flores200_sacrebleu_tokenizer_spm.model"
 
-    # # [Modify] Set paths to the CTranslate2 and SentencePiece models
-    # ct_model_path = "nllb-200-3.3B-int8"
-    # sp_model_path = "flores200_sacrebleu_tokenizer_spm.model"
+    device = "cuda"  # or "cpu"
 
-    # device = "cuda"  # or "cpu"
+    # Load the source SentencePiece model
+    sp = spm.SentencePieceProcessor()
+    sp.load(sp_model_path)
 
-    # # Load the source SentencePiece model
-    # sp = spm.SentencePieceProcessor()
-    # sp.load(sp_model_path)
-
-    # translator = ctranslate2.Translator(ct_model_path, device=device)
+    translator = ctranslate2.Translator(ct_model_path, device=device, device_index=0)
 
     try:
         while True:
@@ -278,11 +304,11 @@ def init_worker(queue, transcripts):
                 backend,
                 transcripts,
                 logger,
-                # translator,
-                # sp,
+                translator,
+                sp,
             )
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=True)
     finally:
         channel.close()
         connection.close()

@@ -63,6 +63,23 @@ function setSummModel(summModel) {
     fetch(request);
 }
 
+// function setLanguage(language) {
+
+//     let data = new FormData();
+//     let sessionId = getSessionId();
+
+//     data.append('language', language);
+
+//     let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_language/";
+//     const request = new Request(apiUrl, {
+//         method: 'POST',
+//         body: data,
+//     });
+
+//     fetch(request);
+
+// }
+
 // function setActiveStatus(status) {
 //     let data = new FormData();
 //     let sessionId = getSessionId();

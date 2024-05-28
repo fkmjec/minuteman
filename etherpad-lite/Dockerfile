@@ -9,6 +9,7 @@ COPY --chown=etherpad entrypoint.sh /opt/etherpad-lite
 RUN ["chmod", "+x", "/opt/etherpad-lite/wait-for-it.sh"]
 RUN ["chmod", "+x", "/opt/etherpad-lite/entrypoint.sh"]
 COPY ep_minuteman ./ep_minuteman
+ENV LOGLEVEL=WARN
 
 # ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "src/node/server.js"]

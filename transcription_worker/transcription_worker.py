@@ -10,7 +10,7 @@ import faster_whisper
 import numpy as np
 import pika
 import requests
-from faster_whisper import vad
+from faster_whisper import WhisperModel, vad
 from pika.adapters.blocking_connection import BlockingChannel
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
@@ -134,7 +134,7 @@ def handle_request(
     channel: BlockingChannel,
     connection,
     speech_detector,
-    backend,
+    backend: WhisperModel,
     transcripts,
     logger,
 ):
@@ -235,7 +235,10 @@ def init_worker(queue, transcripts):
     logger.setLevel(logging.INFO)
 
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
-    backend = faster_whisper.WhisperModel("/whisper_model", local_files_only=True)
+    # backend = faster_whisper.WhisperModel("/whisper_model", local_files_only=True)
+    backend = faster_whisper.WhisperModel(
+        "large-v3", device="cuda", device_index=[0, 1]
+    )
 
     while not backend.model:
         logger.info("Waiting for backend model to load")

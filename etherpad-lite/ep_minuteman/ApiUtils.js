@@ -12,7 +12,7 @@ let apiKey = '';
 try {
   apiKey = fs.readFileSync(absolutePaths.makeAbsolute('./APIKEY.txt'), 'utf8').trim();
 } catch (e) {
-  console.warn('Could not find APIKEY');
+  console.error('Could not find APIKEY');
 }
 
 // Checks if api key is correct and prepare response if it is not.

@@ -16,6 +16,7 @@ MOCK_ML_MODELS = os.environ["MOCK_ML_MODELS"] == "true"
 REQUEST_SEQ = 0
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("pika").setLevel(logging.WARNING)
 
 
 def summarize(api_obj, input_string, model):
@@ -44,7 +45,8 @@ def process_input(api_obj, body, logger):
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
     result = f"{summarize(api_obj, text, model)}"
-    send_summarized(session_id, summary_seq, result)
+    send_summarized(session_id + "_en", summary_seq, result)
+    send_summarized(session_id + "_cs", summary_seq, result)
     logger.info(deserialized)
 
 

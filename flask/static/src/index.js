@@ -36,6 +36,9 @@ function onModelSelect() {
 
 function populateLanguages() {
     var language_name_to_code = {
+        // "Hindi": "hi",
+        "Marathi": "mt",
+        "Japan": "jp",
         // "Bulgarian": "bg",
         // "Croatian": "hr",
         "Czech": "cs",

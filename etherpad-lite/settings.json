@@ -1,3 +1,11 @@
 {
-    "dumpOnUncleanExit": true
+    "dumpOnUncleanExit": true,
+    "dbType" : "postgres",
+    "dbSettings" : {
+        "user"    : "postgres",
+        "host"    : "postgres",
+        "password": "postgres",
+        "database": "postgres",
+        "charset" : "utf8mb4"
+    }
 }

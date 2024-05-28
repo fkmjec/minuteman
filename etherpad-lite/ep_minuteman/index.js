@@ -59,15 +59,19 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
-    const updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text);
-    if (!updateChs) {
-        return;
+    let updateChs = null;
+    if (sessionId.endsWith("_en")) {
+        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text);
+    }
+    else {
+        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, true);
     }
     await summPad.appendRevision(updateChs);
     padMessageHandler.updatePadClients(summPad);
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = false) {
+    sessionId = sessionId.split("_")[0];
     const model = summaryStore.sessions[sessionId].model;
     const chunk = {
         model: model,
@@ -108,7 +112,6 @@ async function appendTranscript(utterance) {
 
 async function connectToRabbitMQ() {
     let retries = 0;
-    console.log("Connecting to rabbitmq server");
     while (true) {
         try {
             let connection = await amqplib.connect(RABBITMQ_ADDR);
@@ -118,26 +121,28 @@ async function connectToRabbitMQ() {
             await channel.assertQueue(SUMMARY_RESULT_QUEUE);
             channel.consume(TRANSCRIPT_QUEUE, (msg) => {
                 const trscObj = new Utterance(msg.content);
-                console.log("TEST_trscObj:", trscObj);
                 appendTranscript(trscObj);
             }, { noAck: true });
 
+
             channel.consume(SUMMARY_RESULT_QUEUE, (msg) => {
                 const summaryObj = JSON.parse(msg.content);
-                const isDebug = summaryStore.sessions[summaryObj.session_id] && summaryStore.sessions[summaryObj.session_id].debug;
+
+                let minutemanSessionId = summaryObj.session_id.split("_")[0];
+
+                const isDebug = summaryStore.sessions[minutemanSessionId] && summaryStore.sessions[minutemanSessionId].debug;
                 let summaryContent = summaryObj.summary_text;
                 if (isDebug) {
-                    const summary = summaryStore.sessions[summaryObj.session_id].summaries[summaryObj.summary_seq];
+                    const summary = summaryStore.sessions[minutemanSessionId].summaries[summaryObj.summary_seq];
                     const start = summary.trscStart;
                     const end = summary.trscEnd;
                     const seq = summary.seq;
                     summaryContent = ChangesetUtils.prependSummMetadata(summaryContent, seq, start, end);
                 }
 
-                summaryStore.updateSummaryContent(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
+                summaryStore.updateSummaryContent(minutemanSessionId, summaryObj.summary_seq, summaryObj.summary_text);
                 updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryContent);
             }, { noAck: true });
-            console.log("Successfully connected to rabbitmq")
             return connection;
         } catch (err) {
             console.error(err.message);

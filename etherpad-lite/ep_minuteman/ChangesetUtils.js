@@ -125,7 +125,7 @@ exports.getSummaryAppendChs = function (pad, summarySeq, summaryText) {
  * @param {*} summarySeq the summary sequence number (the identifier)
  * @returns the changeset that replaces the old summary content with new
  */
-exports.getSummaryUpdateChs = function (pad, summarySeq, newSummaryText) {
+exports.getSummaryUpdateChs = function (pad, summarySeq, newSummaryText, appendAll) {
     const atext = pad.atext;
     const apool = pad.apool();
     let oldText = pad.text();
@@ -134,6 +134,11 @@ exports.getSummaryUpdateChs = function (pad, summarySeq, newSummaryText) {
     const textLines = atext.text.slice(0, -1).split('\n');
     const attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
     for (const [attribLine, textLine] of exports.zip(attribLines, textLines)) {
+        if (appendAll) {
+            const charsToRemove = 0;
+            const attribs = [["summary_seq", serializeSummSeq(summarySeq)]];
+            return Changeset.makeSplice(oldText, charsBefore, charsToRemove, "\n" + newSummaryText, attribs, pad.pool);
+        }
         const candidateId = exports.getSummLineSeq(attribLine, apool);
         if (candidateId === summarySeq) {
             const charsToRemove = textLine.length;

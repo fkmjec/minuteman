@@ -19,9 +19,11 @@ SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
 MAX_PROB_THR = 0.9
 SAMPLING_RATE = 16000
-MAX_CHUNKS = 7
+MAX_CHUNKS = 15
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("pika").setLevel(logging.WARNING)
+logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
 
 class TranscribableAudio:
@@ -216,10 +218,7 @@ def send_utterance(utterance, connection, channel, logger):
             routing_key="transcript_queue",
             body=json.dumps(utterance),
         )
-    except Exception as e:
-        logger.error(e)
-        logger.info("Reconnecting to RabbitMQ")
-
+    except Exception:
         connection = get_rabbitmq_connection()
         channel = connection.channel()
 
@@ -237,11 +236,11 @@ def init_worker(queue, transcripts):
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
     # backend = faster_whisper.WhisperModel("/whisper_model", local_files_only=True)
     backend = faster_whisper.WhisperModel(
-        "large-v3", device="cuda", device_index=[0, 1]
+        "/whisper_model", local_files_only=True, device="cuda", device_index=[0, 1]
     )
 
     while not backend.model:
-        logger.info("Waiting for backend model to load")
+        logger.debug("Waiting for backend model to load")
         time.sleep(5)
 
     connection = get_rabbitmq_connection()

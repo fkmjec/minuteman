@@ -10,6 +10,7 @@ import config
 import etherpad_interface
 import numpy as np
 import pika
+import requests
 import view_utils
 from extensions import db
 from models import DBInterface
@@ -78,6 +79,12 @@ def cleanup():
 atexit.register(cleanup)
 
 
+@app.errorhandler(requests.exceptions.ConnectionError)
+def handle_connection_error(e):
+    # return a JSON response with the error message and a 500 status code
+    return jsonify(error=str(e)), 500
+
+
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(
@@ -134,7 +141,6 @@ def set_chunk_len(session_id):
 
 @app.route("/minuting/<session_id>/set_summ_model/", methods=["POST"])
 def set_summ_model(session_id):
-    print("setting summ model")
     summ_model = request.form.get("summ_model")
     # local debugging purposes
     if not app_config.mock_ml_models:

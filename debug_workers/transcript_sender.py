@@ -65,7 +65,6 @@ if __name__ == "__main__":
     logger.setLevel(logging.INFO)
     logger.info("Starting summarization worker")
     retries = 0
-    logger.info("Waiting for rabbitmq")
     while retries < 20:
         try:
             # FIXME: disabled heartbeats for now, because threading would be way too complex
@@ -77,7 +76,6 @@ if __name__ == "__main__":
             logger.info(f"Waiting for rabbitmq, retry {retries + 1}")
             retries += 1
             time.sleep(1)
-    logger.info("Connected to rabbitmq")
     channel = connection.channel()
     trsc = load_transcript(args.transcript_path)
     send_utterances(trsc, channel, args.session_id, args.simulate_conversation)

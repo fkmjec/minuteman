@@ -47,8 +47,8 @@ function populateLanguages() {
         "English": "en",
         // "Estonian": "et",
         // "Finnish": "fi",
-        // "French": "fr",
-        "German": "de",
+        "French": "fr",
+        // "German": "de",
         // "Greek": "el",
         // "Hungarian": "hu",
         // "Irish": "ga",
@@ -57,11 +57,11 @@ function populateLanguages() {
         // "Lithuanian": "lt",
         // "Maltese": "mt",
         // "Polish": "pl",
-        // "Portuguese": "pt",
+        "Portuguese": "pt",
         // "Romanian": "ro",
         // "Slovak": "sk",
         // "Slovenian": "sl",
-        // "Spanish": "es",
+        "Spanish": "es",
         // "Swedish": "sv",
         // "Albanian": "sq",
         // "Arabic": "ar",
@@ -90,7 +90,7 @@ function populateLanguages() {
             var option = document.createElement('option');
             option.value = language_name_to_code[language];
             option.text = language;
-            if (language === "English") {
+            if (language === "Czech") {
                 option.selected = true;
             }
             select.add(option);

@@ -129,13 +129,13 @@ exports.getSummaryUpdateChs = function (pad, summarySeq, newSummaryText, appendA
     const atext = pad.atext;
     const apool = pad.apool();
     let oldText = pad.text();
-    const text = newSummaryText;
     let charsBefore = 0;
     const textLines = atext.text.slice(0, -1).split('\n');
     const attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
     for (const [attribLine, textLine] of exports.zip(attribLines, textLines)) {
         if (appendAll) {
             const charsToRemove = 0;
+            charsBefore = oldText.length + 1;
             const attribs = [["summary_seq", serializeSummSeq(summarySeq)]];
             return Changeset.makeSplice(oldText, charsBefore, charsToRemove, "\n" + newSummaryText, attribs, pad.pool);
         }

@@ -17,7 +17,5 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
     # Instantiate the model with the new serving method
-    print("loading model...")
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name)
-    print("saving model...")
     model.save_pretrained(args.save_to)

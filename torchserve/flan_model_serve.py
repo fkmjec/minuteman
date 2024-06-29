@@ -51,7 +51,7 @@ class TransformersClassifierHandler(BaseHandler):
         if text is None:
             text = data[0].get("body")
         sentences = text.decode("utf-8")
-        logger.info("Received text: '%s'", sentences)
+        logger.debug("Received text: '%s'", sentences)
 
         inputs = self.tokenizer.encode_plus(
             sentences, add_special_tokens=True, return_tensors="pt"

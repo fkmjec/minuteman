@@ -1,9 +1,13 @@
 # heavily inspired by https://medium.com/analytics-vidhya/deploy-huggingface-s-bert-to-production-with-pytorch-serve-27b068026d18
 import logging
+import os
 
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from ts.torch_handler.base_handler import BaseHandler
+
+torch.set_num_threads(6)
+os.environ["OMP_NUM_THREADS"] = "6"
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +52,7 @@ class TransformersClassifierHandler(BaseHandler):
         if text is None:
             text = data[0].get("body")
         sentences = text.decode("utf-8")
-        logger.info("Received text: '%s'", sentences)
+        logger.debug("Received text: '%s'", sentences)
 
         inputs = self.tokenizer.encode_plus(
             sentences, add_special_tokens=True, truncation=True, return_tensors="pt"
@@ -73,7 +77,7 @@ class TransformersClassifierHandler(BaseHandler):
         return [string_pred]
 
     def postprocess(self, inference_output):
-        # TODO: Add any needed post-processing of the model predictions here
+        # NOTE: Add any needed post-processing of the model predictions here
         return inference_output
 
 

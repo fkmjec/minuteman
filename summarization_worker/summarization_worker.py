@@ -5,6 +5,8 @@ import threading
 import time
 from queue import Queue
 
+import requests
+
 import api_interface
 import pika
 
@@ -23,38 +25,63 @@ def summarize(api_obj, input_string, model):
     return api_obj.summarize_block(input_string, model)
 
 
-def send_summarized(session_id, summary_seq, summary_text):
-    connection = get_rabbitmq_connection()
-    channel = connection.channel()
+def send_summarized(session_id, summary_seq, summary_text, channel):
     summary = {
         "session_id": session_id,
         "summary_seq": summary_seq,
         "summary_text": summary_text,
     }
-    channel.queue_declare(OUTPUT_QUEUE_NAME, durable=True)
-    channel.basic_publish(
-        exchange="", routing_key=OUTPUT_QUEUE_NAME, body=json.dumps(summary)
-    )
-    connection.close()
+    try:
+        channel.basic_publish(
+            exchange="", routing_key=OUTPUT_QUEUE_NAME, body=json.dumps(summary)
+        )
+    except Exception:
+        connection = get_rabbitmq_connection()
+        channel = connection.channel()
+        channel.queue_declare(OUTPUT_QUEUE_NAME, durable=True)
+        channel.basic_publish(
+            exchange="", routing_key=OUTPUT_QUEUE_NAME, body=json.dumps(summary)
+        )
 
 
-def process_input(api_obj, body, logger):
+def process_input(api_obj, body, channel, logger):
     deserialized = json.loads(body)
     model = deserialized["model"]
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
     result = f"{summarize(api_obj, text, model)}"
-    send_summarized(session_id + "_en", summary_seq, result)
-    send_summarized(session_id + "_cs", summary_seq, result)
-    logger.info(deserialized)
+    send_summarized(session_id + "_en", summary_seq, result, channel)
+
+    sentences_to_translate = [
+        sent.strip()
+        for sent in result.split(".")
+        if len(sent.strip()) > 0
+    ]
+
+    translations = requests.post(
+        "http://translation-worker:7778/translate",
+        json.dumps(sentences_to_translate),
+        headers={"Content-Type": "application/json"},
+    ).json()
+    for language in translations:
+        send_summarized(session_id + "_" + language, summary_seq, translations[language].strip(), channel)
 
 
 def init_worker(queue):
     torch_interface = api_interface.TorchInterface(TORCH_BACKEND_URL, MOCK_ML_MODELS)
-    while True:
-        body = queue.get()
-        process_input(torch_interface, body, logger)
+
+    connection = get_rabbitmq_connection()
+    channel = connection.channel()
+    channel.queue_declare(OUTPUT_QUEUE_NAME, durable=True)
+
+    try:
+        while True:
+            body = queue.get()
+            process_input(torch_interface, body, channel, logger)
+    finally:
+        channel.close()
+        connection.close()
 
 
 def callback(ch, method, properties, body):
@@ -89,9 +116,7 @@ def get_rabbitmq_connection():
 if __name__ == "__main__":
     logger = get_logger(__name__)
     logger.info("Starting summarization worker")
-    logger.info("Waiting for rabbitmq")
     connection = get_rabbitmq_connection()
-    logger.info("Connected to rabbitmq")
     queue = Queue()
     threading.Thread(target=init_worker, args=(queue,), daemon=True).start()
     channel = connection.channel()

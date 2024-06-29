@@ -66,8 +66,10 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
     else {
         updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, true);
     }
-    await summPad.appendRevision(updateChs);
-    padMessageHandler.updatePadClients(summPad);
+    if (updateChs !== null) {
+        await summPad.appendRevision(updateChs);
+        padMessageHandler.updatePadClients(summPad);
+    }
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = false) {
@@ -99,7 +101,8 @@ async function appendTranscript(utterance) {
     await addUtteranceToPad(trscPad, utterance, isDebug);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        // let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        let summaryContent = "";
         if (isDebug) {
             summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${SUMMARY_IN_PROGRESS}`;
         }
@@ -163,7 +166,6 @@ async function init() {
 
 // Add api hooks for our summary api extensions
 exports.expressCreateServer = function (hook, args, cb) {
-    logger.info("Express create server called!");
     args.app.use(express.json());
     args.app.post("/api/createSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {
@@ -264,7 +266,6 @@ exports.expressCreateServer = function (hook, args, cb) {
 }
 
 exports.padUpdate = function (hook, context, cb) {
-    logger.info("padUpdate called!");
     // edited by the plugin, no action needed
     if (!context.author) {
         cb();

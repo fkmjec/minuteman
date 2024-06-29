@@ -5,10 +5,9 @@ import threading
 import time
 from queue import Queue
 
-import requests
-
 import api_interface
 import pika
+import requests
 
 MAX_RABBITMQ_RETRIES = 200
 INPUT_QUEUE_NAME = "summary_input_queue"
@@ -50,13 +49,15 @@ def process_input(api_obj, body, channel, logger):
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
     text = deserialized["text"]
+
+    if text.strip() <= 50:
+        return
+
     result = f"{summarize(api_obj, text, model)}"
     send_summarized(session_id + "_en", summary_seq, result, channel)
 
     sentences_to_translate = [
-        sent.strip()
-        for sent in result.split(".")
-        if len(sent.strip()) > 0
+        sent.strip() for sent in result.split(".") if len(sent.strip()) > 0
     ]
 
     translations = requests.post(
@@ -65,7 +66,12 @@ def process_input(api_obj, body, channel, logger):
         headers={"Content-Type": "application/json"},
     ).json()
     for language in translations:
-        send_summarized(session_id + "_" + language, summary_seq, translations[language].strip(), channel)
+        send_summarized(
+            session_id + "_" + language,
+            summary_seq,
+            translations[language].strip(),
+            channel,
+        )
 
 
 def init_worker(queue):

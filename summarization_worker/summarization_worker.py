@@ -69,7 +69,7 @@ def process_input(api_obj, body, channel):
 
     # LOGGER.info("Sending summarization for en")
     # LOGGER.info(f"summarization: {result}")
-    send_summarized(session_id + "_en", summary_seq, result, channel)
+    send_summarized(session_id + "_" + "en", summary_seq, result, channel)
 
     sentences_to_translate = [
         sent.strip() for sent in result.split(".") if len(sent.strip()) > 0

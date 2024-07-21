@@ -9,10 +9,12 @@ import api_interface
 import pika
 import requests
 
+
 def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     return logger
+
 
 LOGGER = get_logger(__name__)
 
@@ -73,11 +75,16 @@ def process_input(api_obj, body, channel):
         sent.strip() for sent in result.split(".") if len(sent.strip()) > 0
     ]
 
-    translations = requests.post(
-        "http://translation-worker:7778/translate",
-        json.dumps(sentences_to_translate),
-        headers={"Content-Type": "application/json"},
-    ).json()
+    for i in range(10):
+        try:
+            translations = requests.post(
+                "http://translation-worker:7778/translate",
+                json.dumps(sentences_to_translate),
+                headers={"Content-Type": "application/json"},
+            ).json()
+        except Exception as e:
+            LOGGER.error(e)
+            time.sleep(i)
 
     for language in translations:
         # LOGGER.info(f"Sending summarization for {language}")

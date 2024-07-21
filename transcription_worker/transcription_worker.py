@@ -188,12 +188,16 @@ def handle_request(
                 for sent in utterance_text.split(".")
                 if len(sent.strip()) > 0
             ]
-
-            translations = requests.post(
-                "http://translation-worker:7778/translate",
-                json.dumps(sentences_to_translate),
-                headers={"Content-Type": "application/json"},
-            ).json()
+            for i in range(10):
+                try:
+                    translations = requests.post(
+                        "http://translation-worker:7778/translate",
+                        json.dumps(sentences_to_translate),
+                        headers={"Content-Type": "application/json"},
+                    ).json()
+                except Exception as e:
+                    logger.error(e)
+                    time.sleep(i)
 
             for language in translations:
                 utterance = (

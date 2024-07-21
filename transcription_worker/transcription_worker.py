@@ -194,6 +194,7 @@ def handle_request(
                 json.dumps(sentences_to_translate),
                 headers={"Content-Type": "application/json"},
             ).json()
+
             for language in translations:
                 utterance = (
                     {

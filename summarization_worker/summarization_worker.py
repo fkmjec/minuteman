@@ -9,6 +9,13 @@ import api_interface
 import pika
 import requests
 
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    return logger
+
+LOGGER = get_logger(__name__)
+
 MAX_RABBITMQ_RETRIES = 200
 INPUT_QUEUE_NAME = "summary_input_queue"
 OUTPUT_QUEUE_NAME = "summary_result_queue"
@@ -43,17 +50,23 @@ def send_summarized(session_id, summary_seq, summary_text, channel):
         )
 
 
-def process_input(api_obj, body, channel, logger):
+def process_input(api_obj, body, channel):
     deserialized = json.loads(body)
     model = deserialized["model"]
     session_id = deserialized["session_id"]
     summary_seq = deserialized["summary_seq"]
-    text = deserialized["text"]
+    text = deserialized["text"].strip()
 
-    if text.strip() <= 50:
+    if len(text) <= 50:
         return
 
-    result = f"{summarize(api_obj, text, model)}"
+    result = f"{summarize(api_obj, text, model)}".strip()
+
+    if len(result) <= 50:
+        return
+
+    # LOGGER.info("Sending summarization for en")
+    # LOGGER.info(f"summarization: {result}")
     send_summarized(session_id + "_en", summary_seq, result, channel)
 
     sentences_to_translate = [
@@ -65,11 +78,14 @@ def process_input(api_obj, body, channel, logger):
         json.dumps(sentences_to_translate),
         headers={"Content-Type": "application/json"},
     ).json()
+
     for language in translations:
+        # LOGGER.info(f"Sending summarization for {language}")
+        # LOGGER.info(f"summarization: {translations[language]}")
         send_summarized(
             session_id + "_" + language,
             summary_seq,
-            translations[language].strip(),
+            translations[language],
             channel,
         )
 
@@ -84,7 +100,7 @@ def init_worker(queue):
     try:
         while True:
             body = queue.get()
-            process_input(torch_interface, body, channel, logger)
+            process_input(torch_interface, body, channel)
     finally:
         channel.close()
         connection.close()
@@ -93,12 +109,6 @@ def init_worker(queue):
 def callback(ch, method, properties, body):
     queue.put(body)
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
-
-def get_logger(name):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    return logger
 
 
 def get_rabbitmq_connection():
@@ -111,8 +121,8 @@ def get_rabbitmq_connection():
             return connection
         except Exception as e:
             retries += 1
-            logger.debug(e)
-            logger.error(
+            LOGGER.debug(e)
+            LOGGER.error(
                 f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
             )
             time.sleep(5)
@@ -120,8 +130,7 @@ def get_rabbitmq_connection():
 
 
 if __name__ == "__main__":
-    logger = get_logger(__name__)
-    logger.info("Starting summarization worker")
+    LOGGER.info("Starting summarization worker")
     connection = get_rabbitmq_connection()
     queue = Queue()
     threading.Thread(target=init_worker, args=(queue,), daemon=True).start()

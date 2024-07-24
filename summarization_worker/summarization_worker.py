@@ -82,6 +82,7 @@ def process_input(api_obj, body, channel):
                 json.dumps(sentences_to_translate),
                 headers={"Content-Type": "application/json"},
             ).json()
+            break
         except Exception as e:
             LOGGER.error(e)
             time.sleep(i)

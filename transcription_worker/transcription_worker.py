@@ -195,6 +195,7 @@ def handle_request(
                         json.dumps(sentences_to_translate),
                         headers={"Content-Type": "application/json"},
                     ).json()
+                    break
                 except Exception as e:
                     logger.error(e)
                     time.sleep(i)

@@ -275,10 +275,11 @@ def get_rabbitmq_connection():
             return connection
         except Exception as e:
             retries += 1
-            logger.debug(e)
-            logger.error(
-                f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
-            )
+            if retries >= 5:
+                logger.debug(e)
+                logger.error(
+                    f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
+                )
             time.sleep(5)
     raise Exception("Could not connect to rabbitmq")
 

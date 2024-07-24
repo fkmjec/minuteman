@@ -64,7 +64,7 @@ def process_input(api_obj, body, channel):
 
     result = f"{summarize(api_obj, text, model)}".strip()
 
-    if len(result) <= 50:
+    if len(result) <= 10:
         return
 
     # LOGGER.info("Sending summarization for en")
@@ -128,10 +128,11 @@ def get_rabbitmq_connection():
             return connection
         except Exception as e:
             retries += 1
-            LOGGER.debug(e)
-            LOGGER.error(
-                f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
-            )
+            if retries >= 5:
+                LOGGER.debug(e)
+                LOGGER.error(
+                    f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
+                )
             time.sleep(5)
     raise Exception("Could not connect to rabbitmq")
 

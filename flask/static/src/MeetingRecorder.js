@@ -1,5 +1,31 @@
-import ApiInterface from './ApiInterface.js';
+// import ApiInterface from './ApiInterface.js';
 import { TrackRecorder } from './TrackRecorder.js';
+
+function retryFetch(url, options, maxRetries = 10) {
+    return new Promise((resolve, reject) => {
+        function attemptFetch(retriesLeft) {
+            fetch(url, options)
+                .then(response => {
+                    if (response.ok) {
+                        resolve(response);
+                    } else if (retriesLeft === 1) {
+                        reject(new Error(`Failed to fetch ${url}: ${response.status}`));
+                    } else {
+                        setTimeout(() => attemptFetch(retriesLeft - 1), 1000);
+                    }
+                })
+                .catch(error => {
+                    if (retriesLeft === 1) {
+                        reject(error);
+                    } else {
+                        setTimeout(() => attemptFetch(retriesLeft - 1), 1000);
+                    }
+                });
+        }
+
+        attemptFetch(maxRetries);
+    });
+}
 
 
 function cleanRoomName(roomName) {
@@ -126,8 +152,22 @@ MeetingRecorder.prototype.updateNames = function () {
 };
 
 MeetingRecorder.prototype.stop = function () {
+    let meetingRoom = this.options.roomName;
+
     // stop all recorders
     this.recorders.forEach(trackRecorder => trackRecorder.stop());
+
+    // push audio with transcripts to GitHub
+    console.log("Uploading files to GitHub for the meeting room:", meetingRoom);
+    retryFetch("https://minuteman.kmjec.cz/upload/", {
+        headers: {
+            "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({ meetingRoom: meetingRoom }),
+    }, 10)
+        .then(response => console.log("Successfully uploaded files to GitHub for the meeting room:", meetingRoom))
+        .catch(error => console.error("Upload files to GitHub failed:", error.message));
 };
 
 MeetingRecorder.prototype.initJitsi = function (initOptions) {
@@ -228,8 +268,8 @@ MeetingRecorder.prototype.disconnect = function () {
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         this.disconnect.bind(this));
-    // ApiInterface.setActiveStatus(false);
     this.stop();
+    // ApiInterface.setActiveStatus(false);
 }
 
 MeetingRecorder.prototype.onRoomSelect = function () {

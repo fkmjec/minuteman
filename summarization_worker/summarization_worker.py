@@ -67,6 +67,8 @@ def process_input(api_obj, body, channel):
     if len(result) <= 10:
         return
 
+    print(f"Sending summarization for en: {result}")
+
     # LOGGER.info("Sending summarization for en")
     # LOGGER.info(f"summarization: {result}")
     send_summarized(session_id + "_" + "en", summary_seq, result, channel)
@@ -88,8 +90,7 @@ def process_input(api_obj, body, channel):
             time.sleep(i)
 
     for language in translations:
-        # LOGGER.info(f"Sending summarization for {language}")
-        # LOGGER.info(f"summarization: {translations[language]}")
+        print(f"Sending summarization for {language}: {translations[language]}")
         send_summarized(
             session_id + "_" + language,
             summary_seq,

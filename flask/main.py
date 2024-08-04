@@ -1,5 +1,6 @@
 import atexit
 import copy
+import json
 import logging
 import os
 import struct
@@ -13,8 +14,6 @@ import pika
 import requests
 import view_utils
 from extensions import db
-from models import DBInterface
-
 from flask import (
     Flask,
     abort,
@@ -25,6 +24,7 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from models import DBInterface
 
 app = Flask(__name__)
 # load config from env variables
@@ -105,6 +105,29 @@ def minuting(session_id):
         session_id=session_id,
         etherpad_url=app_config.etherpad_url,
     )
+
+
+@app.route("/upload/", methods=["POST"])
+def upload():
+    meeting_room_name = str(json.loads(request.data.decode("utf-8"))["meetingRoom"])
+
+    print(f"Uploading meeting room {meeting_room_name} to GitHub")
+
+    for i in range(10):
+        try:
+            response = requests.post(
+                "http://translation-worker:7778/upload",
+                data=meeting_room_name.encode("utf-8"),
+            )
+            response.raise_for_status()
+            return jsonify({"status_code": 200, "message": "ok"})
+
+        except Exception as e:
+            print("Failed to call upload to GitHub method, retrying in 1s")
+            print(e.with_traceback())
+            time.sleep(i)
+
+    return jsonify({"status_code": 502, "message": "error"})
 
 
 # creates a new minuting session, initializes the editors, sets up basic config

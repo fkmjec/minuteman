@@ -36,9 +36,9 @@ function onModelSelect() {
 
 function populateLanguages() {
     var language_name_to_code = {
-        // "Hindi": "hi",
+        "Hindi": "hi",
         "Chinese (Simplified)": "zh",
-        // "Marathi": "mt",
+        "Marathi": "mt",
         // "Japan": "jp",
         // "Bulgarian": "bg",
         // "Croatian": "hr",
@@ -51,9 +51,9 @@ function populateLanguages() {
         "French": "fr",
         // "German": "de",
         // "Greek": "el",
-        // "Hungarian": "hu",
+        "Hungarian": "hu",
         // "Irish": "ga",
-        // "Italian": "it",
+        "Italian": "it",
         // "Latvian": "lv",
         // "Lithuanian": "lt",
         // "Maltese": "mt",
@@ -85,6 +85,8 @@ function populateLanguages() {
         // "Norwegian Bokmål": "nb",
         // "Catalan": "ca",
         // "Norwegian Nynorsk": "nn"
+        "Swahili": "sw",
+        "Welsh": "we",
     }
 
     waitForElementLoad('#languageSelect').then((select) => {

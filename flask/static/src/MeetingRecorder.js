@@ -158,16 +158,16 @@ MeetingRecorder.prototype.stop = function () {
     this.recorders.forEach(trackRecorder => trackRecorder.stop());
 
     // push audio with transcripts to GitHub
-    console.log("Uploading files to GitHub for the meeting room:", meetingRoom);
-    retryFetch("https://minuteman.kmjec.cz/upload/", {
-        headers: {
-            "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({ meetingRoom: meetingRoom }),
-    }, 10)
-        .then(response => console.log("Successfully uploaded files to GitHub for the meeting room:", meetingRoom))
-        .catch(error => console.error("Upload files to GitHub failed:", error.message));
+    // console.log("Uploading files to GitHub for the meeting room:", meetingRoom);
+    // retryFetch("https://minuteman.ufal.mff.cuni.cz/upload/", {
+    //     headers: {
+    //         "Content-Type": "application/json",
+    //     },
+    //     method: "POST",
+    //     body: JSON.stringify({ meetingRoom: meetingRoom }),
+    // }, 10)
+    //     .then(response => console.log("Successfully uploaded files to GitHub for the meeting room:", meetingRoom))
+    //     .catch(error => console.error("Upload files to GitHub failed:", error.message));
 };
 
 MeetingRecorder.prototype.initJitsi = function (initOptions) {

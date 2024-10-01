@@ -12,9 +12,9 @@ class PadInterface:
         )
 
         self.language_name_to_code = {
-            # "Hindi": "hi",
+            "Hindi": "hi",
             "Chinese (Simplified)": "zh",
-            # "Marathi": "mt",
+            "Marathi": "mt",
             # "Japan": "jp",
             #     "Bulgarian": "bg",
             # "Croatian": "hr",
@@ -27,9 +27,9 @@ class PadInterface:
             "French": "fr",
             # "German": "de",
             #     "Greek": "el",
-            #     "Hungarian": "hu",
+                "Hungarian": "hu",
             #     "Irish": "ga",
-            #     "Italian": "it",
+                "Italian": "it",
             #     "Latvian": "lv",
             #     "Lithuanian": "lt",
             #     "Maltese": "mt",
@@ -61,6 +61,8 @@ class PadInterface:
             #     "Norwegian Bokmål": "nb",
             # "Catalan": "ca",
             #     "Norwegian Nynorsk": "nn",
+            "Swahili": "sw",
+            "Welsh": "we",
         }
 
     def _get_trsc_pad_id(self, pad_id):

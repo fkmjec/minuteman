@@ -61,7 +61,7 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
     const summPad = await padManager.getPad(summPadId);
     let updateChs = null;
     if (sessionId.endsWith("_en")) {
-        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text);
+        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, false);
     }
     else {
         updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, true);

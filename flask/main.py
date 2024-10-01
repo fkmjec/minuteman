@@ -59,7 +59,7 @@ def get_rabbitmq_connection():
         except Exception as e:
             retries += 1
             if retries >= 5:
-                logger.debug(e)
+                # logger.debug(e)
                 logger.error(
                     f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
                 )
@@ -107,27 +107,27 @@ def minuting(session_id):
     )
 
 
-@app.route("/upload/", methods=["POST"])
-def upload():
-    meeting_room_name = str(json.loads(request.data.decode("utf-8"))["meetingRoom"])
+# @app.route("/upload/", methods=["POST"])
+# def upload():
+#     meeting_room_name = str(json.loads(request.data.decode("utf-8"))["meetingRoom"])
 
-    print(f"Uploading meeting room {meeting_room_name} to GitHub")
+#     print(f"Uploading meeting room {meeting_room_name} to GitHub")
 
-    for i in range(10):
-        try:
-            response = requests.post(
-                "http://translation-worker:7778/upload",
-                data=meeting_room_name.encode("utf-8"),
-            )
-            response.raise_for_status()
-            return jsonify({"status_code": 200, "message": "ok"})
+#     for i in range(10):
+#         try:
+#             response = requests.post(
+#                 "http://translation-worker:7778/upload",
+#                 data=meeting_room_name.encode("utf-8"),
+#             )
+#             response.raise_for_status()
+#             return jsonify({"status_code": 200, "message": "ok"})
 
-        except Exception as e:
-            print("Failed to call upload to GitHub method, retrying in 1s")
-            print(e.with_traceback())
-            time.sleep(i)
+#         except Exception as e:
+#             print("Failed to call upload to GitHub method, retrying in 1s")
+#             print(e.with_traceback())
+#             time.sleep(i)
 
-    return jsonify({"status_code": 502, "message": "error"})
+#     return jsonify({"status_code": 502, "message": "error"})
 
 
 # creates a new minuting session, initializes the editors, sets up basic config
@@ -209,7 +209,7 @@ def transcribe(session_id):
 
     float_array = np.array(float_array, dtype=np.float32)
 
-    with open(f"/audio/{author}-{recorder_id}.bin", "ab") as binary_file:
+    with open(f"/audio/{session_id}-{author}-{recorder_id}.bin", "ab") as binary_file:
         binary_file.write(float_array.tobytes())
 
     chunk = view_utils.create_audio_chunk(

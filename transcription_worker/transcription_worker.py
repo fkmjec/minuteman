@@ -17,7 +17,7 @@ WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
-MAX_PROB_THR = 0.9
+MAX_PROB_THR = 0.935
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
@@ -36,18 +36,21 @@ class SpeechDetector:
     def __init__(self, model_path):
         self.model = vad.SileroVADModel(model_path)
 
-    def detect_speech(self, audio: np.array):
-        state = self.model.get_initial_state(1)
+    def detect_speech(self, audio: np.array, logger):
+        state, context = self.model.get_initial_states(batch_size=1)
         max_prob = 0
         for i in range(0, len(audio), VAD_CHUNK_SIZE):
             chunk = audio[i : i + VAD_CHUNK_SIZE]
 
             if len(chunk) < VAD_CHUNK_SIZE:
                 chunk = np.pad(chunk, (0, int(VAD_CHUNK_SIZE - len(chunk))))
-            speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
+            speech_prob, state, _ = self.model(
+                x=chunk, state=state, context=context, sr=SAMPLING_RATE
+            )
             if speech_prob[0][0] > max_prob:
                 max_prob = speech_prob
         if max_prob > MAX_PROB_THR:
+            logger.info(f"Speech probability in current audio sequence: {max_prob}")
             return True
         return False
 
@@ -151,7 +154,7 @@ def handle_request(
     chunk = deserialized.get_chunk()
     chunk = chunk.astype(np.float32)
 
-    contains_speech = speech_detector.detect_speech(chunk)
+    contains_speech = speech_detector.detect_speech(chunk, logger)
     transcribable_audio = transcripts.add_chunk(
         session_id, recorder_id, chunk, contains_speech
     )
@@ -164,7 +167,7 @@ def handle_request(
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
-            logger.debug(f"Transcript {i}: {segment.text}")
+            logger.info(f"Transcript {i}: {segment.text}")
 
         if len(utterance_text) > 0:
             # send English first

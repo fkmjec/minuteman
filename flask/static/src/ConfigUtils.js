@@ -22,7 +22,13 @@ function updateChunkLen(chunkLen) {
 }
 
 function updateConfigOptions(config, modelOptions) {
-    populateSelect('modelSelect', modelOptions, config.summModel);
+    try {
+        populateSelect('modelSelect', modelOptions, config.summModel);
+    }
+    catch (error) {
+        populateSelect('modelSelect', modelOptions, "BART");
+        console.error(error.message);
+    }
     updateChunkLen(config.chunkLen);
 }
 

@@ -15,7 +15,10 @@ services:
       ETHERPAD_URL: "[YOUR_ETHERPAD_URL]"
       TORCHSERVE_MANAGEMENT_URL: "http://torchserve:8085"
       PYTHONBUFFERED: 1
-    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 60
+    command: gunicorn main:app -w 2 --threads 2 -b 0.0.0.0:7777 --timeout 3600 --log-level info
+    restart: always
+    volumes:
+      - /SOME_LOCAL_FOLDER_FOR_STORING_AUDIO_DATA:/audio
     depends_on:
       - rabbitmq
       - postgres
@@ -27,10 +30,14 @@ services:
     build: ./transcription_worker
     environment:
       # OPTION: you can select a more or less powerful model here if needed and possible with your hardware
-      WHISPER_MODEL: "medium.en"
+      WHISPER_MODEL: "large-v3"
     command: python transcription_worker.py
+    restart: always
     depends_on:
       - rabbitmq
+      - translation-worker
+    volumes:
+      - /SOME_LOCAL_WHISPER_MODEL_FOLDER:/whisper_model
     deploy:
       resources:
         reservations:
@@ -38,21 +45,51 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+              
+    translation-worker:
+    build: ./translation_worker
+    environment:
+      MOCK_ML_MODELS: "false"
+      CT_MODEL_PATH: "/nllb-200-600M-int8"
+      SP_MODEL_PATH: "/flores200_sacrebleu_tokenizer_spm.model"
+      PYTHONBUFFERED: 1
+      DATA_FOLDER_PATH: "/minuteman_data"
+    command: gunicorn main:app -w 1 --threads 1 -b 0.0.0.0:7778 --timeout 3600 --log-level info
+    restart: always
+    # OPTION: mount the model and tokenizer files
+    volumes:
+      - /SOME_LOCAL_NLLB_MODEL_FOLDER/nllb-200-600M-int8:/nllb-200-600M-int8
+      - /SOME_LOCAL_NLLB_MODEL_FOLDER/flores200_sacrebleu_tokenizer_spm.model:/flores200_sacrebleu_tokenizer_spm.model
+      - /SOME_LOCAL_WHISPER_MODEL_FOLDER:/whisper_model
+      - /SOME_LOCAL_DATA_FOLDER:/minuteman_data
+    # OPTION: set the running port for the application.
+    ports:
+      - 7778:7778
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1"]
+              capabilities: [gpu]
 
   summ-worker:
     build: ./summarization_worker
     environment:
       # OPTION: when set to true, this replaces requests to torchserve models with a mock string
+      PYTHONBUFFERED: 1
       MOCK_ML_MODELS: "false"
       TORCH_BACKEND_URL: "http://torchserve:8084"
     command: python summarization_worker.py
+    restart: always
     depends_on:
       - rabbitmq
+      - translation-worker
 
   torchserve:
     build: ./torchserve
     # OPTION: you can provide additional models here if you created them
-    command: torchserve --ts-config /torch-config.cnf --model-store /torch_model_dir --models flan-t5=flan-t5-base-samsum.mar bart=lidiya-bart.mar --log-config /torchserve-log4j2.xml --start
+    command: torchserve --ts-config /torch-config.cnf --model-store /torch_model_dir --models bart=lidiya-bart.mar --log-config /torchserve-log4j2.xml --start
     volumes:
      - ./torch_model_dir:/torch_model_dir
      - ./torch-config.cnf:/torch-config.cnf
@@ -60,20 +97,22 @@ services:
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+         devices:
+           - driver: nvidia
+             device_ids: ["1"]
+             capabilities: [gpu]
 
   postgres:
-    image: 'postgres'
+    image: postgres:15-alpine
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - db:/var/lib/postgres/data
+      - pgdata:/var/lib/postgresql/data
       - ./flask/db/create_db.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    command: ["postgres", "-c", "log_statement=none", "-c", "log_checkpoints=off"]
 
   etherpad:
     build: ./etherpad-lite
@@ -91,15 +130,25 @@ services:
       DB_PASS: postgres
       DB_NAME: postgres
       DB_CHARSET: utf8mb4
+    restart: no
     depends_on:
       - postgres
       - rabbitmq
+    volumes:
+      - plugins:/opt/etherpad-lite/src/plugin_packages
+      - etherpad-var:/opt/etherpad-lite/var
 
   rabbitmq:
+    build: ./rabbitmq
     image: rabbitmq
     volumes:
       - ./rabbitmq:/var/lib/rabbitmq
+    # OPTION: rabbitMQ ports are forwarded to the host by default, as it is often the case that you want to stream a transcript into the editor from an external script
+    ports:
+      - 5672:5672
+      - 15672:15672
 
 volumes:
-  db:
-    driver: local
+  pgdata:
+  plugins:
+  etherpad-var:

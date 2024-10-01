@@ -1,7 +1,7 @@
-const { Changeset } = require("ep_etherpad-lite/static/js/Changeset"); 
+const { Changeset } = require("ep_etherpad-lite/static/js/Changeset");
 const Utils = require("./Utils");
 
-exports.aceAttribsToClasses = function(hook, context, cb) {
+exports.aceAttribsToClasses = function (hook, context, cb) {
     if (context.key == "summary_seq") {
         return cb([`summary_seq::${context.value}`]);
     } else if (context.key == "trsc_seq") {
@@ -12,13 +12,18 @@ exports.aceAttribsToClasses = function(hook, context, cb) {
 
 exports.collectContentPre = function (hookName, context, cb) {
     const state = context.state;
-    if (context.cls.startsWith("summary_seq::")) {
-        context.cc.doAttrib(state, context.cls);
+    try {
+
+        if (context.cls.startsWith("summary_seq::")) {
+            context.cc.doAttrib(state, context.cls);
+        }
+        if (context.cls.startsWith("trsc_seq::")) {
+            context.cc.doAttrib(state, context.cls);
+        }
+        return cb();
+    } catch (typeError) {
+        console.warn(typeError);
     }
-    if (context.cls.startsWith("trsc_seq::")) {
-        context.cc.doAttrib(state, context.cls);
-    }
-    return cb();
 };
 
 function sendSummaryRequest(sessionId, start, end) {

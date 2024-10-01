@@ -1,14 +1,16 @@
 import re
 
+
 class Transcript:
     """
     The base class for all future processing. A transcript gets loaded into it from various formats and is then fed
     through preprocessing stages.
     """
+
     def __init__(self, roles, utterances):
         self.roles = roles
         self.utterances = utterances
-    
+
     def raw_str(self):
         joined_list = []
         for role, utterance in zip(self.roles, self.utterances):
@@ -41,7 +43,6 @@ class Transcript:
             utterances.append(current_utterance)
         return Transcript(roles, utterances)
 
-
     @staticmethod
     def from_automin(input_string):
         roles = []
@@ -68,5 +69,3 @@ class Transcript:
             roles.append(current_role)
             utterances.append(current_utterance)
         return Transcript(roles, utterances)
-
-

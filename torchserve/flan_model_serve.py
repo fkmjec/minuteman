@@ -1,11 +1,8 @@
 # heavily inspired by https://medium.com/analytics-vidhya/deploy-huggingface-s-bert-to-production-with-pytorch-serve-27b068026d18
-import json
 import logging
-import os
 
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-
 from ts.torch_handler.base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
@@ -13,11 +10,13 @@ logger = logging.getLogger(__name__)
 # change this if you want to use a different model
 MODEL_NAME = "google/flan-t5-base"
 
+
 class TransformersClassifierHandler(BaseHandler):
     """
     Transformers text classifier handler class. This handler takes a text (string) and
     as input and returns the classification text based on the serialized transformers checkpoint.
     """
+
     def __init__(self):
         super(TransformersClassifierHandler, self).__init__()
         self.initialized = False
@@ -27,7 +26,11 @@ class TransformersClassifierHandler(BaseHandler):
 
         properties = ctx.system_properties
         model_dir = properties.get("model_dir")
-        self.device = torch.device("cuda:" + str(properties.get("gpu_id")) if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda:" + str(properties.get("gpu_id"))
+            if torch.cuda.is_available()
+            else "cpu"
+        )
 
         # Read model serialize/pt file
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_dir, load_in_8bit=True)
@@ -36,23 +39,22 @@ class TransformersClassifierHandler(BaseHandler):
         self.model.to(self.device)
         self.model.eval()
 
-        logger.debug('Transformer model from path {0} loaded successfully'.format(model_dir))
+        logger.debug(
+            "Transformer model from path {0} loaded successfully".format(model_dir)
+        )
 
         self.initialized = True
 
     def preprocess(self, data):
-        """ Very basic preprocessing code - only tokenizes. 
-        """
+        """Very basic preprocessing code - only tokenizes."""
         text = data[0].get("data")
         if text is None:
             text = data[0].get("body")
-        sentences = text.decode('utf-8')
-        logger.info("Received text: '%s'", sentences)
+        sentences = text.decode("utf-8")
+        logger.debug("Received text: '%s'", sentences)
 
         inputs = self.tokenizer.encode_plus(
-            sentences,
-            add_special_tokens=True,
-            return_tensors="pt"
+            sentences, add_special_tokens=True, return_tensors="pt"
         )
         return inputs
 
@@ -61,12 +63,14 @@ class TransformersClassifierHandler(BaseHandler):
         Predict the class of a text using a trained transformer model.
         """
         prediction = self.model.generate(
-            inputs['input_ids'].to(self.device),
-            max_length=256
+            inputs["input_ids"].to(self.device),
+            max_length=256,
             # token_type_ids=inputs['token_type_ids'].to(self.device)
         )
 
-        string_pred = self.tokenizer.batch_decode(prediction, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        string_pred = self.tokenizer.batch_decode(
+            prediction, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )[0]
         logger.info("Model predicted: '%s'", string_pred)
 
         return [string_pred]

@@ -6,7 +6,7 @@ Minuteman is a tool to help users with meeting minuting (producing a summary of 
 
 ## Current development
 
-This project is still actively developed. We are working on multilingual transcriptions/summaries and investigating the possibility to not rely on Fairmeeting (Jitsy) but rather allow any form of audio input while retaining decent speaker diarization. Latest changes can be found in the [improvements](https://github.com/fkmjec/minuteman/tree/improvements) branch.
+This project is still actively developed. We are working on multilingual transcriptions/summaries and investigating the possibility to not rely on Fairmeeting (Jitsy) but rather allow any form of audio input while retaining decent speaker diarization.
 
 ## User documentation
 
@@ -41,7 +41,7 @@ And after downloading the necessary containers and building the dependencies, we
 
 ### Production
 
-For running in production, we need to download the summarization models. To do that, we run `download_summ_models.sh` in the `torch_model_dir` directory. We also need to set an additional option, `ETHERPAD_URL`, to the domain we have pointed to our Etherpad editors for iframing. After that, the commands to run are the same as for the development version, except with a different compose file.
+For running in production, we need to download the summarization models. To do that, we run `download_summ_models.sh` in the `torch_model_dir` directory. We also need to set an additional option, `ETHERPAD_URL`, to the domain we have pointed to our Etherpad editors for iframes. After that, the commands to run are the same as for the development version, except with a different compose file.
 
 ```sh
 docker compose -f docker-compose.yml build

@@ -7,3 +7,12 @@ mnesia/
 *.cookie
 APIKEY*
 .vscode
+rainbow-mt-dump/
+nllb/
+*.wav
+*.mar
+*.model
+meta-models
+nllb-*/
+rainbow-*/
+docker-compose-dev.yml

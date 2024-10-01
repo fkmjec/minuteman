@@ -26,14 +26,14 @@ const summaryStore = new SummaryStore();
 let rabbitMQConnection = null;
 
 init();
-  
+
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
 
-exports.padCreate = function(hook, context, cb){
+exports.padCreate = function (hook, context, cb) {
     const apool = new AttributePool();
     const builder = Changeset.builder(1, apool);
     context.pad.setText("");
@@ -59,15 +59,21 @@ async function updateSummaryInPad(sessionId, summarySeq, text) {
     sessionId = (await readOnlyManager.getIds(apiUtils.sanitizePadId(sessionId))).padId;
     const summPadId = sessionId + ".summ";
     const summPad = await padManager.getPad(summPadId);
-    const updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text);
-    if (!updateChs) {
-        return;
+    let updateChs = null;
+    if (sessionId.endsWith("_en")) {
+        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, false);
     }
-    await summPad.appendRevision(updateChs);
-    padMessageHandler.updatePadClients(summPad);
+    else {
+        updateChs = ChangesetUtils.getSummaryUpdateChs(summPad, summarySeq, text, true);
+    }
+    if (updateChs !== null) {
+        await summPad.appendRevision(updateChs);
+        padMessageHandler.updatePadClients(summPad);
+    }
 }
 
 async function sendChunkToSummarize(sessionId, summarySeq, text, user_edit = false) {
+    sessionId = sessionId.split("_")[0];
     const model = summaryStore.sessions[sessionId].model;
     const chunk = {
         model: model,
@@ -91,10 +97,12 @@ async function appendTranscript(utterance) {
     // create the changeset together with the summary attribute (beware, pool must be passed too)
     // append a newline as this cannot be done in the changeset
     const trscChunk = summaryStore.appendUtterance(utterance, isDebug);
+
     await addUtteranceToPad(trscPad, utterance, isDebug);
     if (trscChunk) {
         // wait for the summary to be present in the pad so that it can be then asynchronously replaced
-        let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        // let summaryContent = `${trscChunk.seq}: ${SUMMARY_IN_PROGRESS}`;
+        let summaryContent = "";
         if (isDebug) {
             summaryContent = `${trscChunk.seq} ${trscChunk.start}->${trscChunk.end} || ${SUMMARY_IN_PROGRESS}`;
         }
@@ -107,7 +115,6 @@ async function appendTranscript(utterance) {
 
 async function connectToRabbitMQ() {
     let retries = 0;
-    console.log("Connecting to rabbitmq server");
     while (true) {
         try {
             let connection = await amqplib.connect(RABBITMQ_ADDR);
@@ -120,23 +127,25 @@ async function connectToRabbitMQ() {
                 appendTranscript(trscObj);
             }, { noAck: true });
 
+
             channel.consume(SUMMARY_RESULT_QUEUE, (msg) => {
                 const summaryObj = JSON.parse(msg.content);
-                const isDebug = summaryStore.sessions[summaryObj.session_id] && summaryStore.sessions[summaryObj.session_id].debug;
+
+                let minutemanSessionId = summaryObj.session_id.split("_")[0];
+
+                const isDebug = summaryStore.sessions[minutemanSessionId] && summaryStore.sessions[minutemanSessionId].debug;
                 let summaryContent = summaryObj.summary_text;
                 if (isDebug) {
-                    // TODO: rewrite this mess
-                    const summary = summaryStore.sessions[summaryObj.session_id].summaries[summaryObj.summary_seq];
+                    const summary = summaryStore.sessions[minutemanSessionId].summaries[summaryObj.summary_seq];
                     const start = summary.trscStart;
                     const end = summary.trscEnd;
                     const seq = summary.seq;
                     summaryContent = ChangesetUtils.prependSummMetadata(summaryContent, seq, start, end);
                 }
 
-                summaryStore.updateSummaryContent(summaryObj.session_id, summaryObj.summary_seq, summaryObj.summary_text);
+                summaryStore.updateSummaryContent(minutemanSessionId, summaryObj.summary_seq, summaryObj.summary_text);
                 updateSummaryInPad(summaryObj.session_id, summaryObj.summary_seq, summaryContent);
             }, { noAck: true });
-            console.log("Successfully connected to rabbitmq")
             return connection;
         } catch (err) {
             console.error(err.message);
@@ -156,8 +165,7 @@ async function init() {
 }
 
 // Add api hooks for our summary api extensions
-exports.expressCreateServer = function(hook, args, cb) {
-    logger.info("Express create server called!");
+exports.expressCreateServer = function (hook, args, cb) {
     args.app.use(express.json());
     args.app.post("/api/createSumm", async (req, res) => {
         const fields = await new Promise((resolve, reject) => {
@@ -199,6 +207,16 @@ exports.expressCreateServer = function(hook, args, cb) {
         summaryStore.setModel(sessionId, summModel);
         res.status(200).send("OK");
     });
+
+    // args.app.post("/api/setSummModel", async (req, res) => {
+    //     const fields = await new Promise((resolve, reject) => {
+    //         new Formidable().parse(req, (err, fields) => err ? reject(err) : resolve(fields));
+    //     });
+    //     const language = fields.language;
+    //     // summaryStore.setModel(sessionId, summModel);
+    //     console.log("New language:", language);
+    //     res.status(200).send("OK");
+    // });
 
 
     args.app.post("/api/setConnectionStatus", async (req, res) => {
@@ -247,15 +265,14 @@ exports.expressCreateServer = function(hook, args, cb) {
     cb();
 }
 
-exports.padUpdate = function(hook, context, cb) {
-    logger.info("padUpdate called!");
+exports.padUpdate = function (hook, context, cb) {
     // edited by the plugin, no action needed
     if (!context.author) {
         cb();
         return;
     }
     if (context.pad.id.slice(-5) === ".trsc") {
-        const sessionId = context.pad.id.slice(0, -5); 
+        const sessionId = context.pad.id.slice(0, -5);
         const toSummarize = summaryStore.updateTrsc(sessionId, context.pad);
         for (const summary of toSummarize) {
             sendChunkToSummarize(sessionId, summary.seq, summary.source, true);

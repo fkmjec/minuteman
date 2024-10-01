@@ -2,3 +2,7 @@
 inference_address=http://0.0.0.0:8084
 management_address=http://0.0.0.0:8085
 metrics_address=http://0.0.0.0:8086
+enable_metrics_api=false
+disable_system_metrics=true
+metrics_api=false
+log_level=error

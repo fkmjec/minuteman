@@ -1,5 +1,31 @@
-import ApiInterface from './ApiInterface.js';
+// import ApiInterface from './ApiInterface.js';
 import { TrackRecorder } from './TrackRecorder.js';
+
+function retryFetch(url, options, maxRetries = 10) {
+    return new Promise((resolve, reject) => {
+        function attemptFetch(retriesLeft) {
+            fetch(url, options)
+                .then(response => {
+                    if (response.ok) {
+                        resolve(response);
+                    } else if (retriesLeft === 1) {
+                        reject(new Error(`Failed to fetch ${url}: ${response.status}`));
+                    } else {
+                        setTimeout(() => attemptFetch(retriesLeft - 1), 1000);
+                    }
+                })
+                .catch(error => {
+                    if (retriesLeft === 1) {
+                        reject(error);
+                    } else {
+                        setTimeout(() => attemptFetch(retriesLeft - 1), 1000);
+                    }
+                });
+        }
+
+        attemptFetch(maxRetries);
+    });
+}
 
 
 function cleanRoomName(roomName) {
@@ -23,11 +49,11 @@ function MeetingRecorder() {
             enabled: false
         }
     };
-    
+
     this.connection = null;
     this.isJoined = false;
     this.room = null;
-    
+
     // TODO: transfer this to init constants somewhere
     this.options = {
         hosts: {
@@ -45,7 +71,7 @@ function MeetingRecorder() {
  *
  * @param track the track potentially holding an audio stream
  */
-MeetingRecorder.prototype.addTrack = function(track) {
+MeetingRecorder.prototype.addTrack = function (track) {
     console.info("Adding track in MeetingRecorder");
     if (track.isAudioTrack()) {
         // create the track recorder
@@ -76,7 +102,7 @@ MeetingRecorder.prototype.addTrack = function(track) {
  *
  * @param {JitsiTrack} track the JitsiTrack to remove from the recording session
  */
-MeetingRecorder.prototype.removeTrack = function(track) {
+MeetingRecorder.prototype.removeTrack = function (track) {
     console.info("Removing track in MeetingRecorder");
     if (track.isVideoTrack()) {
         return;
@@ -107,7 +133,7 @@ MeetingRecorder.prototype.removeTrack = function(track) {
  * If it hasn't changed,it will keep the exiting name. If it changes to a
  * undefined value, the old value will also be kept.
  */
-MeetingRecorder.prototype.updateNames = function() {
+MeetingRecorder.prototype.updateNames = function () {
     const conference = this.room;
 
     this.recorders.forEach(trackRecorder => {
@@ -125,16 +151,30 @@ MeetingRecorder.prototype.updateNames = function() {
     });
 };
 
-MeetingRecorder.prototype.stop = function() {
+MeetingRecorder.prototype.stop = function () {
+    let meetingRoom = this.options.roomName;
+
     // stop all recorders
     this.recorders.forEach(trackRecorder => trackRecorder.stop());
+
+    // push audio with transcripts to GitHub
+    // console.log("Uploading files to GitHub for the meeting room:", meetingRoom);
+    // retryFetch("https://minuteman.ufal.mff.cuni.cz/upload/", {
+    //     headers: {
+    //         "Content-Type": "application/json",
+    //     },
+    //     method: "POST",
+    //     body: JSON.stringify({ meetingRoom: meetingRoom }),
+    // }, 10)
+    //     .then(response => console.log("Successfully uploaded files to GitHub for the meeting room:", meetingRoom))
+    //     .catch(error => console.error("Upload files to GitHub failed:", error.message));
 };
 
-MeetingRecorder.prototype.initJitsi = function(initOptions) {
+MeetingRecorder.prototype.initJitsi = function (initOptions) {
     JitsiMeetJS.init(initOptions);
 }
 
-MeetingRecorder.prototype.connect = function() {
+MeetingRecorder.prototype.connect = function () {
     let connection = new JitsiMeetJS.JitsiConnection(null, null, this.options);
 
     connection.addEventListener(
@@ -146,7 +186,7 @@ MeetingRecorder.prototype.connect = function() {
     connection.addEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         this.disconnect.bind(this));
-        
+
     connection.connect();
     this.connection = connection;
 }
@@ -154,7 +194,7 @@ MeetingRecorder.prototype.connect = function() {
 /**
  * That function is called when connection is established successfully
  */
- MeetingRecorder.prototype.onConnectionSuccess = function() {
+MeetingRecorder.prototype.onConnectionSuccess = function () {
     this.room = this.connection.initJitsiConference(this.options.roomName, this.confOptions);
     this.room.setDisplayName("Minuteman")
     this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
@@ -176,7 +216,7 @@ MeetingRecorder.prototype.connect = function() {
 /**
  * That function is executed when the conference is joined
  */
- MeetingRecorder.prototype.onConferenceJoined = function() {
+MeetingRecorder.prototype.onConferenceJoined = function () {
     console.info('conference joined!');
     this.isJoined = true;
 }
@@ -185,7 +225,7 @@ MeetingRecorder.prototype.connect = function() {
  * Handles remote tracks
  * @param track JitsiTrack object
  */
- MeetingRecorder.prototype.onRemoteTrack = function(track) {
+MeetingRecorder.prototype.onRemoteTrack = function (track) {
     console.info("remote track added");
     if (track.isLocal() || track.type === 'video') {
         // only record outside and audio tracks
@@ -195,7 +235,7 @@ MeetingRecorder.prototype.connect = function() {
     this.addTrack(track);
 }
 
-MeetingRecorder.prototype.onRemoveRemoteTrack = function(track) {
+MeetingRecorder.prototype.onRemoveRemoteTrack = function (track) {
     console.info("remote track removed")
     this.removeTrack(track);
 }
@@ -204,21 +244,21 @@ MeetingRecorder.prototype.onRemoveRemoteTrack = function(track) {
  *
  * @param id
  */
- MeetingRecorder.prototype.onUserLeft = function(id) {
+MeetingRecorder.prototype.onUserLeft = function (id) {
     console.info('user left');
 }
 
 /**
  * This function is called when the connection fails
  */
-MeetingRecorder.prototype.onConnectionFailed = function() {
+MeetingRecorder.prototype.onConnectionFailed = function () {
     console.error('Connection Failed!');
 }
 
 /**
  * This function is called when we disconnect.
  */
- MeetingRecorder.prototype.disconnect = function() {
+MeetingRecorder.prototype.disconnect = function () {
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
         this.onConnectionSuccess.bind(this));
@@ -228,11 +268,11 @@ MeetingRecorder.prototype.onConnectionFailed = function() {
     this.connection.removeEventListener(
         JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
         this.disconnect.bind(this));
-    // ApiInterface.setActiveStatus(false);
     this.stop();
+    // ApiInterface.setActiveStatus(false);
 }
 
-MeetingRecorder.prototype.onRoomSelect = function() {
+MeetingRecorder.prototype.onRoomSelect = function () {
     const initOptions = {
         disableAudioLevels: true
     };
@@ -253,7 +293,7 @@ MeetingRecorder.prototype.onRoomSelect = function() {
 /**
  *
  */
- MeetingRecorder.prototype.unload = function() {
+MeetingRecorder.prototype.unload = function () {
     if (this.room) {
         this.room.leave();
     }

@@ -36,7 +36,7 @@ async function getState() {
     if (response.status != 200) {
         throw new Error("Invalid response from the API while getting state");
     }
-    return {config: json.config, model_selection: json.model_selection};
+    return { config: json.config, model_selection: json.model_selection };
 }
 
 function setChunkLen(chunkLen) {
@@ -62,6 +62,23 @@ function setSummModel(summModel) {
     });
     fetch(request);
 }
+
+// function setLanguage(language) {
+
+//     let data = new FormData();
+//     let sessionId = getSessionId();
+
+//     data.append('language', language);
+
+//     let apiUrl = window.location.origin + "/minuting/" + sessionId + "/set_language/";
+//     const request = new Request(apiUrl, {
+//         method: 'POST',
+//         body: data,
+//     });
+
+//     fetch(request);
+
+// }
 
 // function setActiveStatus(status) {
 //     let data = new FormData();

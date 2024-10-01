@@ -9,22 +9,22 @@ import audio_chunk
 import faster_whisper
 import numpy as np
 import pika
-
-# import transformers
-from faster_whisper import vad
+import requests
+from faster_whisper import WhisperModel, vad
 from pika.adapters.blocking_connection import BlockingChannel
-
-# from whisper_online import FasterWhisperASR, OnlineASRProcessor
 
 WHISPER_MODEL = os.environ["WHISPER_MODEL"]
 MAX_RABBITMQ_RETRIES = 200
 SILERO_VAD_MODEL = "silero_vad.onnx"
 VAD_CHUNK_SIZE = 512
-MAX_PROB_THR = 0.9
+MAX_PROB_THR = 0.935
 SAMPLING_RATE = 16000
 MAX_CHUNKS = 15
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("pika").setLevel(logging.WARNING)
+logging.getLogger("faster_whisper").setLevel(logging.WARNING)
+
 
 
 class TranscribableAudio:
@@ -37,18 +37,21 @@ class SpeechDetector:
     def __init__(self, model_path):
         self.model = vad.SileroVADModel(model_path)
 
-    def detect_speech(self, audio: np.array):
-        state = self.model.get_initial_state(1)
+    def detect_speech(self, audio: np.array, logger):
+        state, context = self.model.get_initial_states(batch_size=1)
         max_prob = 0
         for i in range(0, len(audio), VAD_CHUNK_SIZE):
             chunk = audio[i : i + VAD_CHUNK_SIZE]
 
             if len(chunk) < VAD_CHUNK_SIZE:
                 chunk = np.pad(chunk, (0, int(VAD_CHUNK_SIZE - len(chunk))))
-            speech_prob, state = self.model(chunk, state, SAMPLING_RATE)
+            speech_prob, state, _ = self.model(
+                x=chunk, state=state, context=context, sr=SAMPLING_RATE
+            )
             if speech_prob[0][0] > max_prob:
                 max_prob = speech_prob
         if max_prob > MAX_PROB_THR:
+            logger.info(f"Speech probability in current audio sequence: {max_prob}")
             return True
         return False
 
@@ -107,10 +110,11 @@ class MeetingTranscriber:
     def add_chunk(self, recorder_id, chunk, contains_speech):
         if recorder_id not in self.tracks:
             self.tracks[recorder_id] = TrackTranscriber()
+            
         has_audio, pushable_audio = self.tracks[recorder_id].update(
             chunk, contains_speech
         )
-        # TODO: create transcriptions when the whole meeting is ready
+        
         if has_audio:
             transcribable_chunk = TranscribableAudio(pushable_audio, self.seq)
             self.seq += 1
@@ -138,7 +142,7 @@ def handle_request(
     channel: BlockingChannel,
     connection,
     speech_detector,
-    backend,
+    backend: WhisperModel,
     transcripts,
     logger,
 ):
@@ -153,7 +157,7 @@ def handle_request(
     chunk = deserialized.get_chunk()
     chunk = chunk.astype(np.float32)
 
-    contains_speech = speech_detector.detect_speech(chunk)
+    contains_speech = speech_detector.detect_speech(chunk, logger)
     transcribable_audio = transcripts.add_chunk(
         session_id, recorder_id, chunk, contains_speech
     )
@@ -162,53 +166,79 @@ def handle_request(
         transcript, _ = backend.transcribe(
             transcribable_audio.audio, language=None, task="translate"
         )
-        # backend.insert_audio_chunk(transcribable_audio.audio)
-
-        # try:
-        #     _, _, text = backend.process_iter()
-        # except AssertionError:
-        #     logger.error(
-        #         "WhisperOnline: Assertion error",
-        #     )
-        #     return
-
-        # if not len(text):
-        #     logger.info("WhisperOnline: No text returned")
-        #     return
-        # utterance_text = text
 
         utterance_text = ""
         for i, segment in enumerate(transcript):
             utterance_text += segment.text + " "
-            logger.debug(f"Transcript {i}: {segment.text}")
-
-        utterance_text = f"{author}: {utterance_text}\n"
+            logger.info(f"Transcript {i}: {segment.text}")
 
         if len(utterance_text) > 0:
-            utterance = {
-                "utterance": utterance_text,
-                "session_id": session_id,
-                "timestamp": str(timestamp),
-                "seq": transcribable_audio.seq,
-            }
-            try:
-                channel.basic_publish(
-                    exchange="",
-                    routing_key="transcript_queue",
-                    body=json.dumps(utterance),
-                )
-            except Exception as e:
-                logger.error(e)
-                logger.info("Reconnecting to RabbitMQ")
+            # send English first
+            utterance = (
+                {
+                    "utterance": f"{author}: {utterance_text}\n",
+                    "session_id": session_id + "_" + "en",
+                    "timestamp": str(timestamp),
+                    "seq": transcribable_audio.seq,
+                },
+            )
+            send_utterance(
+                utterance,
+                connection,
+                channel,
+                logger,
+            )
 
-                connection = get_rabbitmq_connection()
-                channel = connection.channel()
+            sentences_to_translate = [
+                sent.strip()
+                for sent in utterance_text.split(".")
+                if len(sent.strip()) > 0
+            ]
+            for i in range(10):
+                try:
+                    translations = requests.post(
+                        "http://translation-worker:7778/translate",
+                        json.dumps(sentences_to_translate),
+                        headers={"Content-Type": "application/json"},
+                    ).json()
+                    break
+                except Exception as e:
+                    logger.error(e)
+                    time.sleep(i)
 
-                channel.basic_publish(
-                    exchange="",
-                    routing_key="transcript_queue",
-                    body=json.dumps(utterance),
+            for language in translations:
+                utterance = (
+                    {
+                        "utterance": f"{author}: {translations[language]}\n",
+                        "session_id": session_id + "_" + language,
+                        "timestamp": str(timestamp),
+                        "seq": transcribable_audio.seq,
+                    },
                 )
+                send_utterance(
+                    utterance,
+                    connection,
+                    channel,
+                    logger,
+                )
+
+
+def send_utterance(utterance, connection, channel, logger):
+    try:
+        channel.basic_publish(
+            exchange="",
+            routing_key="transcript_queue",
+            body=json.dumps(utterance),
+        )
+    except Exception:
+        connection = get_rabbitmq_connection()
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange="",
+            routing_key="transcript_queue",
+            body=json.dumps(utterance),
+        )
 
 
 def init_worker(queue, transcripts):
@@ -216,14 +246,12 @@ def init_worker(queue, transcripts):
     logger.setLevel(logging.INFO)
 
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
-    backend = faster_whisper.WhisperModel(WHISPER_MODEL)
-
-    # asr = FasterWhisperASR(lan="auto", modelsize="large-v2")
-    # asr.set_translate_task()
-    # backend = OnlineASRProcessor(asr)
+    backend = faster_whisper.WhisperModel(
+        "/whisper_model", local_files_only=True, device="cuda", device_index=[0, 1]
+    )
 
     while not backend.model:
-        logger.info("Waiting for backend model to load")
+        logger.debug("Waiting for backend model to load")
         time.sleep(5)
 
     connection = get_rabbitmq_connection()
@@ -237,7 +265,7 @@ def init_worker(queue, transcripts):
                 body, channel, connection, speech_detector, backend, transcripts, logger
             )
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=True)
     finally:
         channel.close()
         connection.close()
@@ -253,10 +281,11 @@ def get_rabbitmq_connection():
             return connection
         except Exception as e:
             retries += 1
-            logger.debug(e)
-            logger.error(
-                f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
-            )
+            if retries >= 5:
+                logger.debug(e)
+                logger.error(
+                    f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
+                )
             time.sleep(5)
     raise Exception("Could not connect to rabbitmq")
 
@@ -267,7 +296,6 @@ def callback(ch, method, properties, body):
 
 
 if __name__ == "__main__":
-    # setting up logging
     logger = logging.getLogger(__name__)
 
     transcripts = Transcripts()

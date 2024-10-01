@@ -42,7 +42,7 @@ class VoiceRecorder extends AudioWorkletProcessor {
         return this.converter.full(data);
     }
 
-    async createConverter () {
+    async createConverter() {
         console.info("creating converter");
         let converterType = ConverterType.SRC_SINC_FASTEST;
         let nChannels = 1;

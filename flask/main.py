@@ -1,5 +1,6 @@
 import atexit
 import copy
+import json
 import logging
 import os
 import struct
@@ -10,11 +11,20 @@ import config
 import etherpad_interface
 import numpy as np
 import pika
+import requests
 import view_utils
 from extensions import db
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
 from models import DBInterface
-
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 # load config from env variables
@@ -48,10 +58,11 @@ def get_rabbitmq_connection():
             return connection
         except Exception as e:
             retries += 1
-            logger.debug(e)
-            logger.error(
-                f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
-            )
+            if retries >= 5:
+                # logger.debug(e)
+                logger.error(
+                    f"Failed to connect to RabbitMQ, retrying in 5s, retry no. {retries}."
+                )
             time.sleep(5)
     raise Exception("Could not connect to rabbitmq")
 
@@ -69,6 +80,20 @@ def cleanup():
 atexit.register(cleanup)
 
 
+@app.errorhandler(requests.exceptions.ConnectionError)
+def handle_connection_error(e):
+    # return a JSON response with the error message and a 500 status code
+    return jsonify(error=str(e)), 500
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
     if not db_interface.session_exists(session_id):
@@ -79,6 +104,29 @@ def minuting(session_id):
         session_id=session_id,
         etherpad_url=app_config.etherpad_url,
     )
+
+
+# @app.route("/upload/", methods=["POST"])
+# def upload():
+#     meeting_room_name = str(json.loads(request.data.decode("utf-8"))["meetingRoom"])
+
+#     print(f"Uploading meeting room {meeting_room_name} to GitHub")
+
+#     for i in range(10):
+#         try:
+#             response = requests.post(
+#                 "http://translation-worker:7778/upload",
+#                 data=meeting_room_name.encode("utf-8"),
+#             )
+#             response.raise_for_status()
+#             return jsonify({"status_code": 200, "message": "ok"})
+
+#         except Exception as e:
+#             print("Failed to call upload to GitHub method, retrying in 1s")
+#             print(e.with_traceback())
+#             time.sleep(i)
+
+#     return jsonify({"status_code": 502, "message": "error"})
 
 
 # creates a new minuting session, initializes the editors, sets up basic config
@@ -116,7 +164,6 @@ def set_chunk_len(session_id):
 
 @app.route("/minuting/<session_id>/set_summ_model/", methods=["POST"])
 def set_summ_model(session_id):
-    print("setting summ model")
     summ_model = request.form.get("summ_model")
     # local debugging purposes
     if not app_config.mock_ml_models:
@@ -130,6 +177,20 @@ def set_summ_model(session_id):
     else:
         editor_interface.set_summ_model(session_id, summ_model)
         return jsonify({"status_code": 200, "message": "ok"})
+
+
+# @app.route("/minuting/<session_id>/set_language/", methods=["POST"])
+# def set_language(session_id):
+#     language = request.form.get("language")
+#     print("Setting language", language)
+#     # local debugging purposes
+#     available_languages = ["bart", "t5", "gpt2"]
+#     if language not in available_languages:
+#         return jsonify({"status_code": 400, "message": "Unsupported language"})
+#     else:
+#         # editor_interface.set_summ_model(session_id, language)
+#         print("Successfully set language:", language)
+#         return jsonify({"status_code": 200, "message": "ok"})
 
 
 @app.route("/minuting/<session_id>/transcribe/", methods=["POST"])
@@ -147,7 +208,7 @@ def transcribe(session_id):
 
     float_array = np.array(float_array, dtype=np.float32)
 
-    with open(f"/audio/{author}-{recorder_id}.bin", "ab") as binary_file:
+    with open(f"/audio/{session_id}-{author}-{recorder_id}.bin", "ab") as binary_file:
         binary_file.write(float_array.tobytes())
 
     chunk = view_utils.create_audio_chunk(

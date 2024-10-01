@@ -1,9 +1,9 @@
 import logging
-import requests
 import urllib.parse
+
+import requests
 import transcript
 
-# SUMM_MODEL_NAME = "bart"
 
 # the class to hold config and create requests for the underlying TorchServe backend
 class TorchInterface:
@@ -13,9 +13,9 @@ class TorchInterface:
 
     def _construct_model_address(self, model_name):
         return urllib.parse.urljoin(self.torch_backend_url, "predictions/" + model_name)
-    
+
     def _prepare_request_data_files(self, model_input_string):
-        files = {'data': ('model_input.txt', model_input_string)}
+        files = {"data": ("model_input.txt", model_input_string)}
         return files
 
     def summarize_block(self, input_string, model_name):
@@ -31,10 +31,9 @@ class TorchInterface:
             logging.debug(f"Making transcription request to {summ_addr}")
             response = requests.post(summ_addr, files=files)
             if response.status_code != 200:
-                return "summarization unsuccessfull due to model error"
+                return "summarization unsuccessful due to model error"
             return response.text
 
-
     def _prepare_request_data_audio(self, audio_data):
-        files = {'data': ('model_input.audio', audio_data)}
+        files = {"data": ("model_input.audio", audio_data)}
         return files

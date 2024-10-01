@@ -94,7 +94,6 @@ def favicon():
         mimetype="image/vnd.microsoft.icon",
     )
 
-
 @app.route("/minuting/<session_id>", methods=["GET", "POST"])
 def minuting(session_id):
     if not db_interface.session_exists(session_id):

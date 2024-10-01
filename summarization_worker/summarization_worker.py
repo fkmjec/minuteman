@@ -29,6 +29,7 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("pika").setLevel(logging.WARNING)
 
 
+
 def summarize(api_obj, input_string, model):
     return api_obj.summarize_block(input_string, model)
 

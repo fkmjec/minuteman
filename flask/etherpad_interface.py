@@ -10,7 +10,7 @@ class PadInterface:
         self.pad = EtherpadLiteClient(
             self.config.etherpad_api_key, baseUrl=self.config.etherpad_api_url
         )
-
+        # Lanuages used for translations, uncomment or comment as needed
         self.language_name_to_code = {
             "Hindi": "hi",
             "Chinese (Simplified)": "zh",

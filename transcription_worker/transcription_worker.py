@@ -26,6 +26,7 @@ logging.getLogger("pika").setLevel(logging.WARNING)
 logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
 
+
 class TranscribableAudio:
     def __init__(self, audio, seq):
         self.audio = audio
@@ -109,9 +110,11 @@ class MeetingTranscriber:
     def add_chunk(self, recorder_id, chunk, contains_speech):
         if recorder_id not in self.tracks:
             self.tracks[recorder_id] = TrackTranscriber()
+            
         has_audio, pushable_audio = self.tracks[recorder_id].update(
             chunk, contains_speech
         )
+        
         if has_audio:
             transcribable_chunk = TranscribableAudio(pushable_audio, self.seq)
             self.seq += 1
@@ -243,7 +246,6 @@ def init_worker(queue, transcripts):
     logger.setLevel(logging.INFO)
 
     speech_detector = SpeechDetector(SILERO_VAD_MODEL)
-    # backend = faster_whisper.WhisperModel("/whisper_model", local_files_only=True)
     backend = faster_whisper.WhisperModel(
         "/whisper_model", local_files_only=True, device="cuda", device_index=[0, 1]
     )

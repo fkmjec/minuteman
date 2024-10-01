@@ -45,7 +45,7 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-              
+
     translation-worker:
     build: ./translation_worker
     environment:

@@ -6,7 +6,7 @@ Minuteman is a tool to help users with meeting minuting (producing a summary of 
 
 ## Current development
 
-This project is still actively developed. We are working on multilingual transcriptions/summaries and investigating the possibility to not rely on Fairmeeting (Jitsy) but rather allow any form of audio input while retaining decent speaker diarization. Latest changes can be found in the [improvements](https://github.com/fkmjec/minuteman/tree/improvements) branch.
+This project is still actively developed. We are working on multilingual transcriptions/summaries and investigating the possibility to not rely on Fairmeeting (Jitsy) but rather allow any form of audio input while retaining decent speaker diarization.
 
 ## User documentation
 
